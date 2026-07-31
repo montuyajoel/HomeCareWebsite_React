@@ -1,0 +1,66 @@
+/* Main caregiver dashboard layout */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  align-items: start;
+  gap: 24px;
+  width: 100%;
+}
+
+/* Left side */
+.schedule-section {
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+}
+
+/* Right side */
+.shortcuts-section {
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+}
+
+/* Place shortcut cards vertically */
+.shortcuts-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  width: 100%;
+}
+
+/* Ensure cards fill their column */
+.shortcuts-grid>* {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Shortcut button reset */
+.shortcut-button-card {
+  display: block;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* Main page spacing */
+.main-content {
+  width: 100%;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+/* Mobile and tablet */
+@media (max-width: 900px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .schedule-section {
+    order: 1;
+  }
+
+  .shortcuts-section {
+    order: 2;
+  }
+}

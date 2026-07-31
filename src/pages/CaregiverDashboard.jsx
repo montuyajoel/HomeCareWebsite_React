@@ -1,0 +1,951 @@
+// src/pages/CaregiverDashboard.jsx
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import Navbar from '../components/Navbar';
+import DashboardCard from '../components/DashboardCard';
+import { authService } from '../services/authService';
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+
+export default function CaregiverDashboard() {
+  const navigate = useNavigate();
+  const user = authService.getCurrentUser();
+  const [shifts, setShifts] = useState([]);
+  const [isLoadingShifts, setIsLoadingShifts] = useState(true);
+  const [carePlanLoadingShiftId, setCarePlanLoadingShiftId] = useState(null);
+  const [clockInSubmittingShiftId, setClockInSubmittingShiftId] = useState(null);
+  const [clockOutSubmittingShiftId, setClockOutSubmittingShiftId] = useState(null);
+
+  const [activeShift, setActiveShift] = useState(null);
+  const [leaveModalOpen, setLeaveModalOpen] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+  
+  // Leave request form states
+  const [leaveType, setLeaveType] = useState('vacation');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [leaveReason, setLeaveReason] = useState('');
+  const [leaveSuccess, setLeaveSuccess] = useState(false);
+  const [leaveSuccessMessage, setLeaveSuccessMessage] = useState('');
+  const [leaveError, setLeaveError] = useState('');
+  const [isSubmittingLeave, setIsSubmittingLeave] = useState(false);
+
+  // Filed leaves list states
+  const [filedLeavesModalOpen, setFiledLeavesModalOpen] = useState(false);
+  const [filedLeaves, setFiledLeaves] = useState([]);
+  const [isLoadingFiledLeaves, setIsLoadingFiledLeaves] = useState(false);
+  const [filedLeavesError, setFiledLeavesError] = useState('');
+
+  const fetchFiledLeaves = async () => {
+    setIsLoadingFiledLeaves(true);
+    setFiledLeavesError('');
+    const token = authService.getToken();
+    if (!token) {
+      setFiledLeavesError('Session expired. Please sign in again.');
+      setIsLoadingFiledLeaves(false);
+      return;
+    }
+
+    try {
+      const response = await axios.get(`${API_URL}/api/leave-requests/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.data && response.data.success) {
+        setFiledLeaves(response.data.data || []);
+      } else {
+        setFiledLeavesError(response.data?.message || 'Failed to fetch leave requests.');
+      }
+    } catch (err) {
+      setFiledLeavesError(err.response?.data?.message || err.message || 'Failed to load filed leave requests.');
+    } finally {
+      setIsLoadingFiledLeaves(false);
+    }
+  };
+
+  const formatLeaveDate = (isoStr) => {
+    if (!isoStr) return '';
+    return isoStr.split('T')[0];
+  };
+
+  const getStatusBadgeStyle = (status) => {
+    const s = (status || '').toLowerCase();
+    if (s === 'approved') {
+      return { backgroundColor: '#d1fae5', color: '#047857', border: '1px solid #a7f3d0' };
+    }
+    if (s === 'rejected' || s === 'denied') {
+      return { backgroundColor: '#fee2e2', color: '#b91c1c', border: '1px solid #fca5a5' };
+    }
+    return { backgroundColor: '#fef3c7', color: '#b45309', border: '1px solid #fde68a' };
+  };
+
+  // Fetch real shifts if they are available on the backend
+  useEffect(() => {
+    const fetchRealShifts = async () => {
+      setIsLoadingShifts(true);
+      const token = authService.getToken();
+      if (!token) {
+        setIsLoadingShifts(false);
+        return;
+      }
+
+      try {
+        const response = await axios.get(`${API_URL}/api/visits/today-shifts`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (response.data && response.data.success && response.data.body && response.data.body.length > 0) {
+          // Map backend structure to dashboard layout
+          const mapped = response.data.body.map((s, idx) => ({
+            id: s.scheduleId || `b_shift_${idx}`,
+            visitId: s.visitLogId || null,
+            clientId: s.client?._id || '',
+            clientName: s.client?.fullName || 'Active Client',
+            clientCode: s.client?.clientCode || 'CL000',
+            address: s.client?.address ? `${s.client.address.addressLine}, ${s.client.address.county} ${s.client.address.city}, ${s.client.address.postCode}` : 'Not Specified',
+            time: `${s.startTime} - ${s.endTime}`,
+            notes: s.client.notes || 'No special requirements listed.',
+            status: s.hasClockedOut ? 'Completed' : (s.hasClockedIn ? 'Clocked In' : 'Pending'),
+            clockInTime: s.hasClockedIn ? 'Already Logged' : null,
+            clockOutTime: s.hasClockedOut ? 'Already Logged' : null,
+            hasCarePlan: Boolean(s.client?.carePlan?.filePath)
+          }));
+          setShifts(mapped);
+        }
+      } catch (err) {
+        setShifts([]);
+      } finally {
+        setIsLoadingShifts(false);
+      }
+    };
+    fetchRealShifts();
+  }, []);
+
+  const getCurrentPosition = () => new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error('Geolocation is not supported by your browser.'));
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        resolve({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        });
+      },
+      (error) => {
+        if (error.code === error.PERMISSION_DENIED) {
+          reject(new Error('Location permission denied. Please allow location access and try again.'));
+          return;
+        }
+        if (error.code === error.POSITION_UNAVAILABLE) {
+          reject(new Error('Unable to determine your location. Please check your GPS and try again.'));
+          return;
+        }
+        if (error.code === error.TIMEOUT) {
+          reject(new Error('Location request timed out. Please try again.'));
+          return;
+        }
+        reject(new Error('Unable to get your location. Please try again.'));
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  });
+
+  const getClockInErrorMessage = (error) => {
+    if (error?.message && !error.response) {
+      return error.message;
+    }
+
+    const code = error.response?.data?.code;
+    const message = error.response?.data?.message;
+
+    if (code === 'CAREGIVER_NOT_FOUND') return 'Caregiver profile not found for this account.';
+    if (code === 'NOT_YOUR_SHIFT') return 'This shift is not assigned to you.';
+    if (code === 'SHIFT_MISMATCH') return message || 'The selected client/shift does not match.';
+    if (code === 'ALREADY_IN_PROGRESS') return 'This shift is already in progress. Please go to Clock Out.';
+    if (code === 'ALREADY_COMPLETED') return 'This shift has already been completed.';
+    if (code === 'TOO_EARLY') return message || 'You are trying to clock in too early.';
+    if (code === 'ADDRESS_MISSING') return 'Client address coordinates are missing. Please contact office admin.';
+    if (code === 'LOCATION_TOO_FAR') return 'Your location is too far from the client address.';
+    if (code === 'NOTE_REQUIRED') return message || 'A note is required for late clock-in.';
+
+    return message || 'Clock-in failed. Please try again.';
+  };
+
+  const getClockOutErrorMessage = (error) => {
+    if (error?.message && !error.response) {
+      return error.message;
+    }
+
+    const code = error.response?.data?.code;
+    const message = error.response?.data?.message;
+
+    if (code === 'CAREGIVER_NOT_FOUND') return 'Caregiver profile not found for this account.';
+    if (code === 'NOT_YOUR_VISIT') return 'This visit does not belong to you.';
+    if (code === 'ALREADY_COMPLETED') return 'This visit has already been clocked out.';
+    if (code === 'ADDRESS_MISSING') return 'Client address coordinates are missing. Please contact office admin.';
+    if (code === 'LOCATION_TOO_FAR') return 'Your location is too far from the client address.';
+    if (code === 'NOTE_REQUIRED') return message || 'A note is required for this clock-out.';
+
+    return message || 'Clock-out failed. Please try again.';
+  };
+
+  const handleClockIn = async (shiftId) => {
+    // Check if another shift is currently clocked in
+    const alreadyClockedIn = shifts.some(s => s.status === 'Clocked In');
+    if (alreadyClockedIn) {
+      alert("You are already clocked in to another shift. Please clock out of it first.");
+      return;
+    }
+
+    const shift = shifts.find((s) => s.id === shiftId);
+    if (!shift) {
+      alert('Selected shift was not found.');
+      return;
+    }
+
+    if (!shift.clientId) {
+      alert('Client ID is missing for this shift. Please refresh and try again.');
+      return;
+    }
+
+    const token = authService.getToken();
+    if (!token) {
+      alert('Your session has expired. Please sign in again.');
+      return;
+    }
+
+    setClockInSubmittingShiftId(shiftId);
+    try {
+      const { latitude, longitude } = await getCurrentPosition();
+      const payloadBase = {
+        scheduleId: shift.id,
+        clientId: shift.clientId,
+        latitude,
+        longitude
+      };
+
+      let response;
+      try {
+        response = await axios.post(
+          `${API_URL}/api/visits/clock-in`,
+          { ...payloadBase, note: '' },
+          { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
+        );
+      } catch (error) {
+        if (error.response?.data?.code !== 'NOTE_REQUIRED') {
+          throw error;
+        }
+
+        const note = window.prompt(error.response?.data?.message || 'Please enter a note for late clock-in:', '');
+        if (!note || !note.trim()) {
+          alert('Clock-in note is required for late arrivals.');
+          return;
+        }
+
+        response = await axios.post(
+          `${API_URL}/api/visits/clock-in`,
+          { ...payloadBase, note: note.trim() },
+          { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || 'Clock-in failed.');
+      }
+
+      const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      setShifts(prev => prev.map((s) => (
+        s.id === shiftId ? { ...s, status: 'Clocked In', clockInTime: nowStr } : s
+      )));
+      setActiveShift(shiftId);
+    } catch (error) {
+      alert(getClockInErrorMessage(error));
+    } finally {
+      setClockInSubmittingShiftId(null);
+    }
+  };
+
+  const handleClockOut = async (shiftId) => {
+    const shift = shifts.find((s) => s.id === shiftId);
+    if (!shift) {
+      alert('Selected shift was not found.');
+      return;
+    }
+
+    if (!shift.visitId) {
+      alert('Visit record was not found for this shift. Please refresh and try again.');
+      return;
+    }
+
+    if (!shift.clientId) {
+      alert('Client ID is missing for this shift. Please refresh and try again.');
+      return;
+    }
+
+    const token = authService.getToken();
+    if (!token) {
+      alert('Your session has expired. Please sign in again.');
+      return;
+    }
+
+    setClockOutSubmittingShiftId(shiftId);
+    try {
+      const { latitude, longitude } = await getCurrentPosition();
+      const payloadBase = {
+        visitId: shift.visitId,
+        scheduleId: shift.id,
+        clientId: shift.clientId,
+        latitude,
+        longitude
+      };
+
+      let response;
+      try {
+        response = await axios.put(
+          `${API_URL}/api/visits/clock-out`,
+          { ...payloadBase, note: '' },
+          { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
+        );
+      } catch (error) {
+        if (error.response?.data?.code !== 'NOTE_REQUIRED') {
+          throw error;
+        }
+
+        const note = window.prompt(error.response?.data?.message || 'Please enter a note for this clock-out:', '');
+        if (!note || !note.trim()) {
+          alert('A clock-out note is required to continue.');
+          return;
+        }
+
+        response = await axios.put(
+          `${API_URL}/api/visits/clock-out`,
+          { ...payloadBase, note: note.trim() },
+          { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || 'Clock-out failed.');
+      }
+
+      const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      setShifts(prev => prev.map((s) => (
+        s.id === shiftId ? { ...s, status: 'Completed', clockOutTime: nowStr } : s
+      )));
+
+      if (activeShift === shiftId) {
+        setActiveShift(null);
+      }
+    } catch (error) {
+      alert(getClockOutErrorMessage(error));
+    } finally {
+      setClockOutSubmittingShiftId(null);
+    }
+  };
+
+  const handleViewCarePlan = async (shift) => {
+    if (!shift.hasCarePlan) {
+      return;
+    }
+
+    const token = authService.getToken();
+    if (!token) {
+      alert('Your session has expired. Please sign in again.');
+      return;
+    }
+
+    setCarePlanLoadingShiftId(shift.id);
+    try {
+      const response = await axios.get(`${API_URL}/api/clients/care-plan/${shift.clientCode}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob'
+      });
+
+      const blob = new Blob([response.data], {
+        type: response.headers['content-type'] || 'application/pdf'
+      });
+      const blobUrl = URL.createObjectURL(blob);
+      const carePlanWindow = window.open(blobUrl, '_blank', 'noopener,noreferrer');
+
+      if (!carePlanWindow) {
+        alert('Please allow pop-ups to open the care plan in a new tab.');
+      }
+
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    } catch (error) {
+      if (error.response?.status === 404) {
+        alert('No care plan file is currently available for this client.');
+      } else {
+        alert('Unable to open care plan right now. Please try again.');
+      }
+    } finally {
+      setCarePlanLoadingShiftId(null);
+    }
+  };
+
+  const submitLeaveRequest = async (e) => {
+    e.preventDefault();
+    setLeaveError('');
+    setLeaveSuccess(false);
+
+    if (!leaveType) {
+      setLeaveError('Please select a type of leave.');
+      return;
+    }
+    if (!startDate) {
+      setLeaveError('Please select a start date.');
+      return;
+    }
+    if (!endDate) {
+      setLeaveError('Please select an end date.');
+      return;
+    }
+
+    // Validate that startDate is before endDate
+    if (new Date(startDate) > new Date(endDate)) {
+      setLeaveError('Start date must be before end date.');
+      return;
+    }
+
+    // If vacation leave, apply 2 weeks notice rule
+    if (leaveType === 'vacation') {
+      const currentDate = new Date();
+      const noticePeriod = 14; // 2 weeks in days
+      const noticeDate = new Date(currentDate.getTime() + noticePeriod * 24 * 60 * 60 * 1000);
+      
+      if (new Date(startDate) < noticeDate) {
+        setLeaveError('Vacation leave requests must be submitted at least 2 weeks in advance. You can ask for emergency leave if needed.');
+        return;
+      }
+    }
+
+    // If sick or emergency, the caregiver must provide a reason
+    if ((leaveType === 'sick' || leaveType === 'emergency') && (!leaveReason || leaveReason.trim() === '')) {
+      setLeaveError('Kindly provide a reason for sick or emergency leave types.');
+      return;
+    }
+
+    setIsSubmittingLeave(true);
+    try {
+      const token = authService.getToken();
+      const payload = {
+        employeeCode: user?.employeeCode || 'EMP003',
+        leaveType,
+        startDate,
+        endDate,
+        reason: leaveReason.trim()
+      };
+
+      const response = await axios.post(`${API_URL}/api/leave-requests/create`, payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.data && response.data.success) {
+        setLeaveSuccess(true);
+        setLeaveSuccessMessage(response.data.message || 'Leave request created successfully.');
+        setLeaveType('vacation');
+        setStartDate('');
+        setEndDate('');
+        setLeaveReason('');
+        setTimeout(() => {
+          setLeaveModalOpen(false);
+          setLeaveSuccess(false);
+          setLeaveSuccessMessage('');
+        }, 2000);
+      } else {
+        setLeaveError(response.data?.message || 'Failed to create leave request.');
+      }
+    } catch (error) {
+      const errorMsg = error.response?.data?.message || error.message || 'Failed to create leave request.';
+      setLeaveError(errorMsg);
+    } finally {
+      setIsSubmittingLeave(false);
+    }
+  };
+
+  const handleLogout = () => {
+    authService.logout();
+    navigate('/');
+  };
+
+  const currentClockedInShift = shifts.find(s => s.status === 'Clocked In');
+
+  return (
+    <div className="app-container">
+      <Navbar />
+      
+      <main className="main-content">
+        {/* Welcome Section */}
+        <div className="welcome-banner">
+          <div className="welcome-text">
+            <h2>Welcome back, {user?.fullName || 'Caregiver'}</h2>
+            <p>Here is your shift schedule and quick daily management items for today.</p>
+          </div>
+          <button onClick={handleLogout} className="btn btn-outline btn-sm">
+            Sign Out
+          </button>
+        </div>
+
+        <div className="dashboard-grid">
+          {/* Main Shift Schedule Section */}
+          <div className="schedule-section">
+            <h2 className="section-title">Today's Assigned Shifts</h2>
+            
+            {isLoadingShifts ? (
+              <div className="card" style={{ padding: '2rem', textAlign: 'center', color: '#64748B' }}>
+                <p>Loading your assigned shifts...</p>
+              </div>
+            ) : shifts.length === 0 ? (
+              <div className="card" style={{ padding: '2rem', textAlign: 'center', color: '#64748B' }}>
+                <p>No shifts assigned for today.</p>
+              </div>
+            ) : (
+              <div className="shifts-list">
+                {shifts.map((shift) => (
+                  <DashboardCard key={shift.id} className="shift-card">
+                    <div className="shift-header">
+                      <div>
+                        <span className="client-code-badge">{shift.clientCode}</span>
+                        <h3>{shift.clientName}</h3>
+                      </div>
+                      <span className={`status-badge ${shift.status.toLowerCase().replace(' ', '-')}`}>
+                        {shift.status}
+                      </span>
+                    </div>
+
+                    <div className="shift-details">
+                      <div className="detail-item">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <circle cx="12" cy="12" r="10" />
+                          <polyline points="12 6 12 12 16 14" />
+                        </svg>
+                        <span>{shift.time}</span>
+                      </div>
+
+                      <div className="detail-item">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                          <circle cx="12" cy="10" r="3" />
+                        </svg>
+                        <span>{shift.address}</span>
+                      </div>
+
+                      <div className="detail-item notes">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                          <polyline points="14 2 14 8 20 8" />
+                          <line x1="16" y1="13" x2="8" y2="13" />
+                          <line x1="16" y1="17" x2="8" y2="17" />
+                        </svg>
+                        <span>{shift.notes}</span>
+                      </div>
+                    </div>
+
+                    <div className="shift-actions">
+                      <button 
+                        className={`btn btn-sm ${shift.hasCarePlan ? 'btn-outline' : 'btn-disabled'}`}
+                        onClick={() => handleViewCarePlan(shift)}
+                        disabled={!shift.hasCarePlan || carePlanLoadingShiftId === shift.id}
+                        title={shift.hasCarePlan ? 'View official Client Care Plan PDF' : 'No care plan file uploaded'}
+                      >
+                        {carePlanLoadingShiftId === shift.id ? 'Opening Plan...' : (shift.hasCarePlan ? 'Care Plan PDF' : 'No Care Plan')}
+                      </button>
+
+                      {shift.status === 'Pending' && (
+                        <button 
+                          onClick={() => handleClockIn(shift.id)} 
+                          className="btn btn-primary btn-sm"
+                          disabled={clockInSubmittingShiftId === shift.id}
+                        >
+                          {clockInSubmittingShiftId === shift.id ? 'Clocking In...' : 'Clock In'}
+                        </button>
+                      )}
+
+                      {shift.status === 'Clocked In' && (
+                        <button 
+                          onClick={() => handleClockOut(shift.id)} 
+                          className="btn btn-danger btn-sm"
+                          disabled={clockOutSubmittingShiftId === shift.id}
+                        >
+                          {clockOutSubmittingShiftId === shift.id ? 'Clocking Out...' : 'Clock Out'}
+                        </button>
+                      )}
+
+                      {shift.status === 'Completed' && (
+                        <span className="completed-label">
+                          Log Verified ({shift.clockOutTime || 'Done'})
+                        </span>
+                      )}
+                    </div>
+                  </DashboardCard>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Quick Actions Panel */}
+          <div className="shortcuts-section">
+            <h2 className="section-title">Quick Actions & Shortcuts</h2>
+            
+            <div className="shortcuts-grid">
+              {/* Clock Status Widget */}
+              <DashboardCard title="Shift Status" className="widget-card">
+                <div className="status-widget-content">
+                  {currentClockedInShift ? (
+                    <div className="status-indicator active">
+                      <span className="pulse-dot"></span>
+                      <div>
+                        <strong>Active Visit</strong>
+                        <p>{currentClockedInShift.clientName}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="status-indicator idle">
+                      <span className="stable-dot"></span>
+                      <div>
+                        <strong>Off Duty</strong>
+                        <p>No active shift logs</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </DashboardCard>
+
+              {/* Leave Request Shortcut */}
+              <button 
+                onClick={() => setLeaveModalOpen(true)}
+                className="shortcut-button-card card card-hoverable"
+              >
+                <div className="shortcut-icon-container">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                </div>
+                <h3>Request Leave</h3>
+                <p>Submit a request for days off</p>
+              </button>
+
+              {/* View Filed Leaves Shortcut */}
+              <button 
+                onClick={() => {
+                  setFiledLeavesModalOpen(true);
+                  fetchFiledLeaves();
+                }}
+                className="shortcut-button-card card card-hoverable"
+              >
+                <div className="shortcut-icon-container">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                  </svg>
+                </div>
+                <h3>My Filed Leaves</h3>
+                <p>View status of filed requests</p>
+              </button>
+
+              {/* Profile Shortcut */}
+              <button 
+                onClick={() => setProfileModalOpen(true)}
+                className="shortcut-button-card card card-hoverable"
+              >
+                <div className="shortcut-icon-container">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                </div>
+                <h3>My Profile</h3>
+                <p>Verify registration code details</p>
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      {/* Leave Request Modal */}
+      {leaveModalOpen && (
+        <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="leave-modal-title">
+          <div className="modal-content card">
+            <h2 id="leave-modal-title">Submit Leave Request</h2>
+            
+            {leaveSuccess ? (
+              <div className="alert alert-success" role="alert">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                  <polyline points="22 4 12 14.01 9 11.01" />
+                </svg>
+                <span>{leaveSuccessMessage || 'Leave request created successfully. Waiting for admin approval.'}</span>
+              </div>
+            ) : (
+              <form onSubmit={submitLeaveRequest}>
+                {leaveError && <div className="alert alert-danger" role="alert">{leaveError}</div>}
+                
+                <div className="form-group">
+                  <label className="form-label" htmlFor="leaveType">
+                    Type of Leave <span style={{ color: '#ef4444' }}>*</span>
+                  </label>
+                  <select
+                    id="leaveType"
+                    className="form-input"
+                    style={{ width: '100%', boxSizing: 'border-box' }}
+                    value={leaveType}
+                    onChange={(e) => setLeaveType(e.target.value)}
+                    required
+                  >
+                    <option value="vacation">Vacation</option>
+                    <option value="sick">Sick</option>
+                    <option value="emergency">Emergency</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" htmlFor="startDate">
+                    Start Date <span style={{ color: '#ef4444' }}>*</span>
+                  </label>
+                  <input
+                    id="startDate"
+                    type="date"
+                    className="form-input"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" htmlFor="endDate">
+                    End Date <span style={{ color: '#ef4444' }}>*</span>
+                  </label>
+                  <input
+                    id="endDate"
+                    type="date"
+                    className="form-input"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" htmlFor="leaveReason">
+                    Reason for Absence{' '}
+                    {leaveType === 'sick' || leaveType === 'emergency' ? (
+                      <span style={{ color: '#ef4444' }}>* (Required)</span>
+                    ) : (
+                      <span style={{ color: '#64748b', fontWeight: 'normal' }}>(Optional)</span>
+                    )}
+                  </label>
+                  <textarea
+                    id="leaveReason"
+                    className="form-input"
+                    rows="3"
+                    value={leaveReason}
+                    onChange={(e) => setLeaveReason(e.target.value)}
+                    placeholder={
+                      leaveType === 'sick' || leaveType === 'emergency'
+                        ? `Please state the reason for your ${leaveType} leave (required)...`
+                        : 'Optional reason for vacation leave...'
+                    }
+                    required={leaveType === 'sick' || leaveType === 'emergency'}
+                  ></textarea>
+                </div>
+
+                <div className="modal-actions" style={{ flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <button 
+                    type="button" 
+                    className="btn btn-outline" 
+                    style={{ marginRight: 'auto' }}
+                    onClick={() => {
+                      setLeaveModalOpen(false);
+                      setLeaveError('');
+                      setFiledLeavesModalOpen(true);
+                      fetchFiledLeaves();
+                    }}
+                  >
+                    View Filed Leaves
+                  </button>
+                  <button 
+                    type="button" 
+                    className="btn btn-outline" 
+                    disabled={isSubmittingLeave}
+                    onClick={() => {
+                      setLeaveModalOpen(false);
+                      setLeaveError('');
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-primary" disabled={isSubmittingLeave}>
+                    {isSubmittingLeave ? 'Submitting...' : 'Submit Request'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Profile Detail Modal */}
+      {profileModalOpen && (
+        <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
+          <div className="modal-content card">
+            <h2 id="profile-modal-title">Employee Profile</h2>
+            <div className="profile-details-list">
+              <div className="profile-detail-row">
+                <strong>Full Name:</strong>
+                <span>{user?.fullName}</span>
+              </div>
+              <div className="profile-detail-row">
+                <strong>Employee Code:</strong>
+                <span>{user?.employeeCode}</span>
+              </div>
+              <div className="profile-detail-row">
+                <strong>Assigned Role:</strong>
+                <span style={{ textTransform: 'capitalize' }}>{user?.role}</span>
+              </div>
+              <div className="profile-detail-row">
+                <strong>Base Office:</strong>
+                <span>Dublin HQ Office</span>
+              </div>
+              <div className="profile-detail-row">
+                <strong>System ID:</strong>
+                <code style={{ fontSize: '0.8rem', background: '#F1F5F9', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>
+                  {user?.id || 'MOCK_USER_ID_992'}
+                </code>
+              </div>
+            </div>
+            <div className="modal-actions" style={{ justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+              <button type="button" className="btn btn-primary" onClick={() => setProfileModalOpen(false)}>
+                Close Profile
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Filed Leaves Modal */}
+      {filedLeavesModalOpen && (
+        <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="filed-leaves-modal-title">
+          <div className="modal-content card" style={{ maxWidth: '600px', width: '90%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <h2 id="filed-leaves-modal-title" style={{ margin: 0 }}>My Filed Leave Requests</h2>
+              <button 
+                type="button" 
+                className="btn btn-outline btn-sm"
+                onClick={() => fetchFiledLeaves()}
+                disabled={isLoadingFiledLeaves}
+                title="Refresh leave requests"
+              >
+                {isLoadingFiledLeaves ? 'Refreshing...' : 'Refresh'}
+              </button>
+            </div>
+
+            {isLoadingFiledLeaves ? (
+              <div style={{ padding: '2.5rem', textAlign: 'center', color: '#64748b' }}>
+                Loading filed leave requests...
+              </div>
+            ) : filedLeavesError ? (
+              <div className="alert alert-danger" role="alert">
+                {filedLeavesError}
+              </div>
+            ) : filedLeaves.length === 0 ? (
+              <div style={{ padding: '2.5rem', textAlign: 'center', color: '#64748b' }}>
+                <p>No filed leave requests found.</p>
+              </div>
+            ) : (
+              <div style={{ maxHeight: '60vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.85rem', paddingRight: '4px' }}>
+                {filedLeaves.map((item) => {
+                  const startStr = formatLeaveDate(item.startDate);
+                  const endStr = formatLeaveDate(item.endDate);
+                  const dateDisplay = startStr === endStr ? startStr : `${startStr} to ${endStr}`;
+                  const badgeStyle = getStatusBadgeStyle(item.status);
+
+                  return (
+                    <div 
+                      key={item._id || item.id} 
+                      style={{ 
+                        border: '1px solid var(--color-border)', 
+                        borderRadius: 'var(--radius-sm)', 
+                        padding: '1rem',
+                        backgroundColor: '#fafafa',
+                        textAlign: 'left'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                        <span style={{ fontWeight: 600, fontSize: '1rem', textTransform: 'capitalize', color: 'var(--color-text-main)' }}>
+                          {item.leaveType} Leave
+                        </span>
+                        <span 
+                          style={{ 
+                            fontSize: '0.75rem', 
+                            fontWeight: 600, 
+                            padding: '0.25rem 0.65rem', 
+                            borderRadius: '12px', 
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            ...badgeStyle
+                          }}
+                        >
+                          {item.status || 'pending'}
+                        </span>
+                      </div>
+
+                      <div style={{ fontSize: '0.875rem', color: '#475569', marginBottom: '0.5rem' }}>
+                        📅 <strong>Dates:</strong> {dateDisplay}
+                      </div>
+
+                      {item.reason && (
+                        <div style={{ fontSize: '0.875rem', color: '#334155' }}>
+                          <strong>Reason:</strong> "{item.reason}"
+                        </div>
+                      )}
+
+                      {/* Only show adminNotes if there is any */}
+                      {item.adminNotes && item.adminNotes.trim() !== '' && (
+                        <div 
+                          style={{ 
+                            marginTop: '0.65rem', 
+                            padding: '0.5rem 0.75rem', 
+                            backgroundColor: '#f1f5f9', 
+                            borderRadius: '6px', 
+                            fontSize: '0.825rem',
+                            color: '#334155',
+                            borderLeft: '3px solid #3b82f6'
+                          }}
+                        >
+                          <strong>Admin Note:</strong> {item.adminNotes}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="modal-actions" style={{ justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+              <button 
+                type="button" 
+                className="btn btn-primary" 
+                onClick={() => setFiledLeavesModalOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
