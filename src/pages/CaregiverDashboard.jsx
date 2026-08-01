@@ -18,6 +18,7 @@ export default function CaregiverDashboard() {
   const [clockOutSubmittingShiftId, setClockOutSubmittingShiftId] = useState(null);
 
   const [activeShift, setActiveShift] = useState(null);
+  const [shiftNotice, setShiftNotice] = useState(null);
   const [leaveModalOpen, setLeaveModalOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   
@@ -108,7 +109,8 @@ export default function CaregiverDashboard() {
             status: s.hasClockedOut ? 'Completed' : (s.hasClockedIn ? 'Clocked In' : 'Pending'),
             clockInTime: s.hasClockedIn ? 'Already Logged' : null,
             clockOutTime: s.hasClockedOut ? 'Already Logged' : null,
-            hasCarePlan: Boolean(s.client?.carePlan?.filePath)
+            hasCarePlan: Boolean(s.client?.carePlan?.filePath),
+            isClockOutTimeEnabled: Boolean(s.isClockOutTimeEnabled)
           }));
           setShifts(mapped);
         }
@@ -192,14 +194,20 @@ export default function CaregiverDashboard() {
     return message || 'Clock-out failed. Please try again.';
   };
 
-  const handleClockIn = async (shiftId) => {
-    // Check if another shift is currently clocked in
-    const alreadyClockedIn = shifts.some(s => s.status === 'Clocked In');
-    if (alreadyClockedIn) {
-      alert("You are already clocked in to another shift. Please clock out of it first.");
-      return;
-    }
+  const clearShiftNotice = () => {
+    setShiftNotice(null);
+  };
 
+  const requestShiftComment = (shiftId, action, message) => {
+    setShiftNotice({
+      shiftId,
+      action,
+      message,
+      comment: ''
+    });
+  };
+
+  const performClockIn = async (shiftId, note = '') => {
     const shift = shifts.find((s) => s.id === shiftId);
     if (!shift) {
       alert('Selected shift was not found.');
@@ -227,30 +235,11 @@ export default function CaregiverDashboard() {
         longitude
       };
 
-      let response;
-      try {
-        response = await axios.post(
-          `${API_URL}/api/visits/clock-in`,
-          { ...payloadBase, note: '' },
-          { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
-        );
-      } catch (error) {
-        if (error.response?.data?.code !== 'NOTE_REQUIRED') {
-          throw error;
-        }
-
-        const note = window.prompt(error.response?.data?.message || 'Please enter a note for late clock-in:', '');
-        if (!note || !note.trim()) {
-          alert('Clock-in note is required for late arrivals.');
-          return;
-        }
-
-        response = await axios.post(
-          `${API_URL}/api/visits/clock-in`,
-          { ...payloadBase, note: note.trim() },
-          { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
-        );
-      }
+      const response = await axios.post(
+        `${API_URL}/api/visits/clock-in`,
+        { ...payloadBase, note },
+        { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
+      );
 
       if (!response.data?.success) {
         throw new Error(response.data?.message || 'Clock-in failed.');
@@ -261,14 +250,20 @@ export default function CaregiverDashboard() {
         s.id === shiftId ? { ...s, status: 'Clocked In', clockInTime: nowStr } : s
       )));
       setActiveShift(shiftId);
+      clearShiftNotice();
     } catch (error) {
+      if (error.response?.data?.code === 'NOTE_REQUIRED') {
+        requestShiftComment(shiftId, 'clock-in', error.response?.data?.message || 'A note is required for late clock-in.');
+        return;
+      }
+
       alert(getClockInErrorMessage(error));
     } finally {
       setClockInSubmittingShiftId(null);
     }
   };
 
-  const handleClockOut = async (shiftId) => {
+  const performClockOut = async (shiftId, note = '') => {
     const shift = shifts.find((s) => s.id === shiftId);
     if (!shift) {
       alert('Selected shift was not found.');
@@ -302,30 +297,11 @@ export default function CaregiverDashboard() {
         longitude
       };
 
-      let response;
-      try {
-        response = await axios.put(
-          `${API_URL}/api/visits/clock-out`,
-          { ...payloadBase, note: '' },
-          { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
-        );
-      } catch (error) {
-        if (error.response?.data?.code !== 'NOTE_REQUIRED') {
-          throw error;
-        }
-
-        const note = window.prompt(error.response?.data?.message || 'Please enter a note for this clock-out:', '');
-        if (!note || !note.trim()) {
-          alert('A clock-out note is required to continue.');
-          return;
-        }
-
-        response = await axios.put(
-          `${API_URL}/api/visits/clock-out`,
-          { ...payloadBase, note: note.trim() },
-          { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
-        );
-      }
+      const response = await axios.put(
+        `${API_URL}/api/visits/clock-out`,
+        { ...payloadBase, note },
+        { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
+      );
 
       if (!response.data?.success) {
         throw new Error(response.data?.message || 'Clock-out failed.');
@@ -339,11 +315,90 @@ export default function CaregiverDashboard() {
       if (activeShift === shiftId) {
         setActiveShift(null);
       }
+
+      clearShiftNotice();
     } catch (error) {
+      if (error.response?.data?.code === 'NOTE_REQUIRED') {
+        requestShiftComment(shiftId, 'clock-out', error.response?.data?.message || 'A note is required for this clock-out.');
+        return;
+      }
+
       alert(getClockOutErrorMessage(error));
     } finally {
       setClockOutSubmittingShiftId(null);
     }
+  };
+
+  const handleClockIn = async (shiftId) => {
+    // Check if another shift is currently clocked in
+    const alreadyClockedIn = shifts.some(s => s.status === 'Clocked In');
+    if (alreadyClockedIn) {
+      alert("You are already clocked in to another shift. Please clock out of it first.");
+      return;
+    }
+
+    const shift = shifts.find((s) => s.id === shiftId);
+    if (!shift) {
+      alert('Selected shift was not found.');
+      return;
+    }
+
+    if (!shift.clientId) {
+      alert('Client ID is missing for this shift. Please refresh and try again.');
+      return;
+    }
+
+    const token = authService.getToken();
+    if (!token) {
+      alert('Your session has expired. Please sign in again.');
+      return;
+    }
+
+    await performClockIn(shiftId);
+  };
+
+  const handleClockOut = async (shiftId) => {
+    const shift = shifts.find((s) => s.id === shiftId);
+    if (!shift) {
+      alert('Selected shift was not found.');
+      return;
+    }
+
+    if (!shift.visitId) {
+      alert('Visit record was not found for this shift. Please refresh and try again.');
+      return;
+    }
+
+    if (!shift.clientId) {
+      alert('Client ID is missing for this shift. Please refresh and try again.');
+      return;
+    }
+
+    const token = authService.getToken();
+    if (!token) {
+      alert('Your session has expired. Please sign in again.');
+      return;
+    }
+
+    await performClockOut(shiftId);
+  };
+
+  const submitShiftNoticeComment = async () => {
+    if (!shiftNotice) {
+      return;
+    }
+
+    const trimmedComment = shiftNotice.comment.trim();
+    if (!trimmedComment) {
+      return;
+    }
+
+    if (shiftNotice.action === 'clock-in') {
+      await performClockIn(shiftNotice.shiftId, trimmedComment);
+      return;
+    }
+
+    await performClockOut(shiftNotice.shiftId, trimmedComment);
   };
 
   const handleViewCarePlan = async (shift) => {
@@ -358,6 +413,8 @@ export default function CaregiverDashboard() {
     }
 
     setCarePlanLoadingShiftId(shift.id);
+    const carePlanWindow = window.open('', '_blank');
+
     try {
       const response = await axios.get(`${API_URL}/api/clients/care-plan/${shift.clientCode}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -368,10 +425,12 @@ export default function CaregiverDashboard() {
         type: response.headers['content-type'] || 'application/pdf'
       });
       const blobUrl = URL.createObjectURL(blob);
-      const carePlanWindow = window.open(blobUrl, '_blank', 'noopener,noreferrer');
 
-      if (!carePlanWindow) {
-        alert('Please allow pop-ups to open the care plan in a new tab.');
+      if (carePlanWindow) {
+        carePlanWindow.location.href = blobUrl;
+        carePlanWindow.focus();
+      } else {
+        window.location.assign(blobUrl);
       }
 
       setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
@@ -511,7 +570,6 @@ export default function CaregiverDashboard() {
                   <DashboardCard key={shift.id} className="shift-card">
                     <div className="shift-header">
                       <div>
-                        <span className="client-code-badge">{shift.clientCode}</span>
                         <h3>{shift.clientName}</h3>
                       </div>
                       <span className={`status-badge ${shift.status.toLowerCase().replace(' ', '-')}`}>
@@ -547,6 +605,46 @@ export default function CaregiverDashboard() {
                       </div>
                     </div>
 
+                    {shiftNotice && shiftNotice.shiftId === shift.id && (
+                      <div className="shift-notice-card" role="status" aria-live="polite">
+                        <div className="shift-notice-header">
+                          <div className="shift-notice-title-wrap">
+                            <strong>Action required</strong>
+                            <p>{shiftNotice.message}</p>
+                          </div>
+                          <button type="button" className="shift-notice-close" onClick={clearShiftNotice} aria-label="Dismiss notification">
+                            ×
+                          </button>
+                        </div>
+
+                        <label className="form-label shift-notice-label" htmlFor={`shift-comment-${shift.id}`}>
+                          Add a comment
+                        </label>
+                        <textarea
+                          id={`shift-comment-${shift.id}`}
+                          className="form-input shift-notice-textarea"
+                          rows="3"
+                          value={shiftNotice.comment}
+                          onChange={(e) => setShiftNotice(prev => prev ? { ...prev, comment: e.target.value } : prev)}
+                          placeholder="Enter your comment here..."
+                        />
+
+                        <div className="shift-notice-actions">
+                          <button type="button" className="btn btn-outline btn-sm" onClick={clearShiftNotice}>
+                            Close
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-primary btn-sm"
+                            onClick={submitShiftNoticeComment}
+                            disabled={!shiftNotice.comment.trim()}
+                          >
+                            Submit Comment
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="shift-actions">
                       <button 
                         className={`btn btn-sm ${shift.hasCarePlan ? 'btn-outline' : 'btn-disabled'}`}
@@ -567,7 +665,7 @@ export default function CaregiverDashboard() {
                         </button>
                       )}
 
-                      {shift.status === 'Clocked In' && (
+                      {(shift.status === 'Clocked In' || shift.isClockOutTimeEnabled) && (
                         <button 
                           onClick={() => handleClockOut(shift.id)} 
                           className="btn btn-danger btn-sm"
@@ -616,6 +714,26 @@ export default function CaregiverDashboard() {
                   )}
                 </div>
               </DashboardCard>
+
+              {/* Leave Request Shortcut */}
+              <button
+                onClick={() => navigate('/caregiver/upcoming-shifts')}
+                className="shortcut-button-card card card-hoverable"
+              >
+                <div className="shortcut-icon-container">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                    <line x1="8" y1="14" x2="8" y2="18" />
+                    <line x1="12" y1="14" x2="12" y2="18" />
+                    <line x1="16" y1="14" x2="16" y2="18" />
+                  </svg>
+                </div>
+                <h3>14-Day Shift Calendar</h3>
+                <p>View your upcoming shifts in calendar layout</p>
+              </button>
 
               {/* Leave Request Shortcut */}
               <button 
@@ -763,19 +881,6 @@ export default function CaregiverDashboard() {
                 </div>
 
                 <div className="modal-actions" style={{ flexWrap: 'wrap', gap: '0.5rem' }}>
-                  <button 
-                    type="button" 
-                    className="btn btn-outline" 
-                    style={{ marginRight: 'auto' }}
-                    onClick={() => {
-                      setLeaveModalOpen(false);
-                      setLeaveError('');
-                      setFiledLeavesModalOpen(true);
-                      fetchFiledLeaves();
-                    }}
-                  >
-                    View Filed Leaves
-                  </button>
                   <button 
                     type="button" 
                     className="btn btn-outline" 
