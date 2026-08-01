@@ -7,6 +7,7 @@ import AdminLogin from './pages/AdminLogin';
 import AdminRegister from './pages/AdminRegister';
 import CaregiverRegister from './pages/CaregiverRegister';
 import CaregiverDashboard from './pages/CaregiverDashboard';
+import CaregiverUpcomingShifts from './pages/CaregiverUpcomingShifts';
 import AdminDashboard from './pages/AdminDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 import './styles/global.css';
@@ -28,6 +29,14 @@ function App() {
           element={
             <ProtectedRoute allowedRole="caregiver">
               <CaregiverDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/caregiver/upcoming-shifts"
+          element={
+            <ProtectedRoute allowedRole="caregiver">
+              <CaregiverUpcomingShifts />
             </ProtectedRoute>
           }
         />
