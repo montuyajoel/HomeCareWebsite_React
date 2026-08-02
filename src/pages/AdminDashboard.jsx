@@ -8,6 +8,20 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
+const normalizeLeaveRequest = (item) => ({
+  id: item._id,
+  employeeCode: item.employeeCode || 'N/A',
+  fullName: item.fullName || item.employeeName || item.employeeCode || 'N/A',
+  leaveType: item.leaveType || 'leave',
+  startDate: item.startDate || '',
+  endDate: item.endDate || '',
+  reason: item.reason || '',
+  status: (item.status || 'pending').toLowerCase(),
+  adminNotes: item.adminNotes || '',
+  createdAt: item.createdAt || item.startDate || '',
+  updatedAt: item.updatedAt || item.createdAt || ''
+});
+
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const user = authService.getCurrentUser();
@@ -29,11 +43,10 @@ export default function AdminDashboard() {
     { id: 'c4', name: 'David Lee', code: 'EMP1108', client: 'Alice Jenkins', clockIn: '02:15 PM', location: 'Dublin 6' }
   ]);
 
-  // Leave Requests state (interactive)
-  const [leaveRequests, setLeaveRequests] = useState([
-    { id: 'l1', caregiverName: 'Sarah Brown', employeeCode: 'EMP2002', date: '2026-08-04', reason: 'Family gathering event', status: 'Pending' },
-    { id: 'l2', caregiverName: 'Michael Corleone', employeeCode: 'EMP1003', date: '2026-08-11', reason: 'Annual medical appointment', status: 'Pending' }
-  ]);
+  // Leave Requests state
+  const [leaveRequests, setLeaveRequests] = useState([]);
+  const [leaveRequestsLoading, setLeaveRequestsLoading] = useState(true);
+  const [leaveRequestsError, setLeaveRequestsError] = useState('');
 
   // Active Management Drawer placeholder toggles
   const [activeDrawer, setActiveDrawer] = useState(null); // 'schedule', 'client', 'caregiver' or null
@@ -72,22 +85,100 @@ export default function AdminDashboard() {
     fetchAdminStats();
   }, []);
 
-  const handleApproveLeave = (id) => {
-    setLeaveRequests(prev => prev.filter(req => req.id !== id));
-    setStats(prev => ({
-      ...prev,
-      pendingLeaves: Math.max(0, prev.pendingLeaves - 1)
-    }));
-    alert("Leave request approved successfully.");
+  useEffect(() => {
+    const fetchPendingLeaveRequests = async () => {
+      const token = authService.getToken();
+      if (!token) {
+        setLeaveRequestsLoading(false);
+        return;
+      }
+
+      setLeaveRequestsLoading(true);
+      setLeaveRequestsError('');
+
+      try {
+        const response = await axios.get(`${API_URL}/api/leave-requests/get?status=pending`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (response.data?.success) {
+          const pendingRequests = (response.data.data || [])
+            .map(normalizeLeaveRequest)
+            .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+          setLeaveRequests(pendingRequests);
+          setStats(prev => ({
+            ...prev,
+            pendingLeaves: pendingRequests.length
+          }));
+        } else {
+          setLeaveRequestsError(response.data?.message || 'Failed to load leave requests.');
+        }
+      } catch (err) {
+        setLeaveRequestsError(err.response?.data?.message || err.message || 'Failed to load leave requests.');
+      } finally {
+        setLeaveRequestsLoading(false);
+      }
+    };
+
+    fetchPendingLeaveRequests();
+  }, []);
+
+  const oldestPendingLeaveRequests = leaveRequests.slice(0, 5);
+
+  const updateLeaveRequest = async (leaveRequestId, status, adminNotes = '') => {
+    const token = authService.getToken();
+    if (!token) {
+      alert('Your session has expired. Please sign in again.');
+      return false;
+    }
+
+    try {
+      const response = await axios.put(
+        `${API_URL}/api/leave-requests/update/admin`,
+        { leaveRequestId, status, adminNotes },
+        { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
+      );
+
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || 'Failed to update leave request.');
+      }
+
+      return true;
+    } catch (error) {
+      alert(error.response?.data?.message || error.message || 'Failed to update leave request.');
+      return false;
+    }
   };
 
-  const handleRejectLeave = (id) => {
+  const handleApproveLeave = async (id) => {
+    const updated = await updateLeaveRequest(id, 'approved', '');
+    if (!updated) return;
+
     setLeaveRequests(prev => prev.filter(req => req.id !== id));
     setStats(prev => ({
       ...prev,
       pendingLeaves: Math.max(0, prev.pendingLeaves - 1)
     }));
-    alert("Leave request rejected.");
+    alert('Leave request approved successfully.');
+  };
+
+  const handleRejectLeave = async (id) => {
+    const adminNotes = window.prompt('Please add a comment before rejecting this leave request:', '');
+    if (!adminNotes || !adminNotes.trim()) {
+      alert('A comment is required when rejecting a leave request.');
+      return;
+    }
+
+    const updated = await updateLeaveRequest(id, 'rejected', adminNotes.trim());
+    if (!updated) return;
+
+    setLeaveRequests(prev => prev.filter(req => req.id !== id));
+    setStats(prev => ({
+      ...prev,
+      pendingLeaves: Math.max(0, prev.pendingLeaves - 1)
+    }));
+    alert('Leave request rejected.');
   };
 
   const handleLogout = () => {
@@ -281,6 +372,19 @@ export default function AdminDashboard() {
 
           {/* Pending Leave Requests */}
           <div className="admin-list-section">
+            <div className="admin-section-toolbar">
+              <div>
+                <h3 className="section-title-sub">Leave Approval</h3>
+                <p className="admin-section-helper">Showing 5 pending requests that require approval.</p>
+              </div>
+              <button
+                className="btn btn-outline btn-sm"
+                onClick={() => navigate('/admin/leave-requests')}
+              >
+                View All Leave Requests
+              </button>
+            </div>
+
             <DashboardCard 
               title="Pending Leave Requests"
               icon={
@@ -292,7 +396,15 @@ export default function AdminDashboard() {
                 </svg>
               }
             >
-              {leaveRequests.length === 0 ? (
+              {leaveRequestsLoading ? (
+                <div className="no-data-placeholder">
+                  <p>Loading pending leave requests...</p>
+                </div>
+              ) : leaveRequestsError ? (
+                <div className="no-data-placeholder">
+                  <p>{leaveRequestsError}</p>
+                </div>
+              ) : oldestPendingLeaveRequests.length === 0 ? (
                 <div className="no-data-placeholder">
                   <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                     <circle cx="12" cy="12" r="10" />
@@ -302,13 +414,20 @@ export default function AdminDashboard() {
                 </div>
               ) : (
                 <div className="leave-requests-list">
-                  {leaveRequests.map((req) => (
+                  {oldestPendingLeaveRequests.map((req) => (
                     <div key={req.id} className="leave-request-card">
                       <div className="leave-request-header">
-                        <div>
-                          <strong>{req.caregiverName}</strong> ({req.employeeCode})
+                        <div className="leave-request-name-stack">
+                          <strong className="leave-request-name">{req.fullName}</strong>
+                          <span className="leave-type-pill">{req.leaveType}</span>
                         </div>
-                        <span className="leave-date-badge">{req.date}</span>
+                        <div className="leave-request-date-stack">
+                          <span className="leave-date-badge">{new Date(req.createdAt).toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                          <span className={`leave-status-pill ${req.status}`}>{req.status}</span>
+                        </div>
+                      </div>
+                      <div className="leave-request-meta">
+                        <span>{new Date(req.startDate).toLocaleDateString([], { month: 'short', day: 'numeric' })} - {new Date(req.endDate).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
                       </div>
                       <p className="leave-reason-text">"{req.reason}"</p>
                       <div className="leave-actions">
@@ -316,7 +435,7 @@ export default function AdminDashboard() {
                           onClick={() => handleRejectLeave(req.id)} 
                           className="btn btn-outline btn-sm"
                         >
-                          Deny
+                          Reject
                         </button>
                         <button 
                           onClick={() => handleApproveLeave(req.id)} 
