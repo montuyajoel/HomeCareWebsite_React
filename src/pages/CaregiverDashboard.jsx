@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import DashboardCard from '../components/DashboardCard';
+import FiledLeavesModal from '../components/FiledLeavesModal';
 import { authService } from '../services/authService';
 import axios from 'axios';
 
@@ -32,54 +33,8 @@ export default function CaregiverDashboard() {
   const [leaveError, setLeaveError] = useState('');
   const [isSubmittingLeave, setIsSubmittingLeave] = useState(false);
 
-  // Filed leaves list states
+  // Filed leaves modal state
   const [filedLeavesModalOpen, setFiledLeavesModalOpen] = useState(false);
-  const [filedLeaves, setFiledLeaves] = useState([]);
-  const [isLoadingFiledLeaves, setIsLoadingFiledLeaves] = useState(false);
-  const [filedLeavesError, setFiledLeavesError] = useState('');
-
-  const fetchFiledLeaves = async () => {
-    setIsLoadingFiledLeaves(true);
-    setFiledLeavesError('');
-    const token = authService.getToken();
-    if (!token) {
-      setFiledLeavesError('Session expired. Please sign in again.');
-      setIsLoadingFiledLeaves(false);
-      return;
-    }
-
-    try {
-      const response = await axios.get(`${API_URL}/api/leave-requests/me`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      if (response.data && response.data.success) {
-        setFiledLeaves(response.data.data || []);
-      } else {
-        setFiledLeavesError(response.data?.message || 'Failed to fetch leave requests.');
-      }
-    } catch (err) {
-      setFiledLeavesError(err.response?.data?.message || err.message || 'Failed to load filed leave requests.');
-    } finally {
-      setIsLoadingFiledLeaves(false);
-    }
-  };
-
-  const formatLeaveDate = (isoStr) => {
-    if (!isoStr) return '';
-    return isoStr.split('T')[0];
-  };
-
-  const getStatusBadgeStyle = (status) => {
-    const s = (status || '').toLowerCase();
-    if (s === 'approved') {
-      return { backgroundColor: '#d1fae5', color: '#047857', border: '1px solid #a7f3d0' };
-    }
-    if (s === 'rejected' || s === 'denied') {
-      return { backgroundColor: '#fee2e2', color: '#b91c1c', border: '1px solid #fca5a5' };
-    }
-    return { backgroundColor: '#fef3c7', color: '#b45309', border: '1px solid #fde68a' };
-  };
 
   // Fetch real shifts if they are available on the backend
   useEffect(() => {
@@ -105,7 +60,7 @@ export default function CaregiverDashboard() {
             clientCode: s.client?.clientCode || 'CL000',
             address: s.client?.address ? `${s.client.address.addressLine}, ${s.client.address.county} ${s.client.address.city}, ${s.client.address.postCode}` : 'Not Specified',
             time: `${s.startTime} - ${s.endTime}`,
-            notes: s.client.notes || 'No special requirements listed.',
+            notes: s.client?.notes || 'No special requirements listed.',
             status: s.hasClockedOut ? 'Completed' : (s.hasClockedIn ? 'Clocked In' : 'Pending'),
             clockInTime: s.hasClockedIn ? 'Already Logged' : null,
             clockOutTime: s.hasClockedOut ? 'Already Logged' : null,
@@ -754,10 +709,7 @@ export default function CaregiverDashboard() {
 
               {/* View Filed Leaves Shortcut */}
               <button 
-                onClick={() => {
-                  setFiledLeavesModalOpen(true);
-                  fetchFiledLeaves();
-                }}
+                onClick={() => setFiledLeavesModalOpen(true)}
                 className="shortcut-button-card card card-hoverable"
               >
                 <div className="shortcut-icon-container">
@@ -941,116 +893,10 @@ export default function CaregiverDashboard() {
       )}
 
       {/* Filed Leaves Modal */}
-      {filedLeavesModalOpen && (
-        <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="filed-leaves-modal-title">
-          <div className="modal-content card" style={{ maxWidth: '600px', width: '90%' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-              <h2 id="filed-leaves-modal-title" style={{ margin: 0 }}>My Filed Leave Requests</h2>
-              <button 
-                type="button" 
-                className="btn btn-outline btn-sm"
-                onClick={() => fetchFiledLeaves()}
-                disabled={isLoadingFiledLeaves}
-                title="Refresh leave requests"
-              >
-                {isLoadingFiledLeaves ? 'Refreshing...' : 'Refresh'}
-              </button>
-            </div>
-
-            {isLoadingFiledLeaves ? (
-              <div style={{ padding: '2.5rem', textAlign: 'center', color: '#64748b' }}>
-                Loading filed leave requests...
-              </div>
-            ) : filedLeavesError ? (
-              <div className="alert alert-danger" role="alert">
-                {filedLeavesError}
-              </div>
-            ) : filedLeaves.length === 0 ? (
-              <div style={{ padding: '2.5rem', textAlign: 'center', color: '#64748b' }}>
-                <p>No filed leave requests found.</p>
-              </div>
-            ) : (
-              <div style={{ maxHeight: '60vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.85rem', paddingRight: '4px' }}>
-                {filedLeaves.map((item) => {
-                  const startStr = formatLeaveDate(item.startDate);
-                  const endStr = formatLeaveDate(item.endDate);
-                  const dateDisplay = startStr === endStr ? startStr : `${startStr} to ${endStr}`;
-                  const badgeStyle = getStatusBadgeStyle(item.status);
-
-                  return (
-                    <div 
-                      key={item._id || item.id} 
-                      style={{ 
-                        border: '1px solid var(--color-border)', 
-                        borderRadius: 'var(--radius-sm)', 
-                        padding: '1rem',
-                        backgroundColor: '#fafafa',
-                        textAlign: 'left'
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                        <span style={{ fontWeight: 600, fontSize: '1rem', textTransform: 'capitalize', color: 'var(--color-text-main)' }}>
-                          {item.leaveType} Leave
-                        </span>
-                        <span 
-                          style={{ 
-                            fontSize: '0.75rem', 
-                            fontWeight: 600, 
-                            padding: '0.25rem 0.65rem', 
-                            borderRadius: '12px', 
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.5px',
-                            ...badgeStyle
-                          }}
-                        >
-                          {item.status || 'pending'}
-                        </span>
-                      </div>
-
-                      <div style={{ fontSize: '0.875rem', color: '#475569', marginBottom: '0.5rem' }}>
-                        📅 <strong>Dates:</strong> {dateDisplay}
-                      </div>
-
-                      {item.reason && (
-                        <div style={{ fontSize: '0.875rem', color: '#334155' }}>
-                          <strong>Reason:</strong> "{item.reason}"
-                        </div>
-                      )}
-
-                      {/* Only show adminNotes if there is any */}
-                      {item.adminNotes && item.adminNotes.trim() !== '' && (
-                        <div 
-                          style={{ 
-                            marginTop: '0.65rem', 
-                            padding: '0.5rem 0.75rem', 
-                            backgroundColor: '#f1f5f9', 
-                            borderRadius: '6px', 
-                            fontSize: '0.825rem',
-                            color: '#334155',
-                            borderLeft: '3px solid #3b82f6'
-                          }}
-                        >
-                          <strong>Admin Note:</strong> {item.adminNotes}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            <div className="modal-actions" style={{ justifyContent: 'flex-end', marginTop: '1.5rem' }}>
-              <button 
-                type="button" 
-                className="btn btn-primary" 
-                onClick={() => setFiledLeavesModalOpen(false)}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <FiledLeavesModal
+        isOpen={filedLeavesModalOpen}
+        onClose={() => setFiledLeavesModalOpen(false)}
+      />
     </div>
   );
 }

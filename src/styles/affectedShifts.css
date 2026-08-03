@@ -1,0 +1,225 @@
+/* Affected Shifts Confirmation Modal */
+.alert-warning {
+  background-color: #FFFBEB;
+  border: 1px solid #FCD34D;
+  color: #92400E;
+}
+
+.affected-shifts-modal {
+  width: min(94vw, 680px);
+  max-width: 680px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.affected-shifts-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.affected-shifts-header h2 {
+  margin: 0 0 0.3rem;
+}
+
+.affected-shifts-icon {
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  background-color: #FEF3C7;
+  color: #B45309;
+}
+
+.affected-shifts-subtitle {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  line-height: 1.4;
+  text-transform: capitalize;
+}
+
+.affected-shifts-warning {
+  align-items: flex-start;
+  flex-shrink: 0;
+  line-height: 1.5;
+}
+
+.affected-shifts-clear-state {
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+  border: 1px solid #A7F3D0;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-success-bg);
+  color: #065F46;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.affected-shifts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 360px;
+  padding-right: 0.35rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.affected-shifts-list::-webkit-scrollbar {
+  width: 7px;
+}
+
+.affected-shifts-list::-webkit-scrollbar-track {
+  background-color: var(--color-bg-base);
+  border-radius: 999px;
+}
+
+.affected-shifts-list::-webkit-scrollbar-thumb {
+  background-color: var(--color-border-hover);
+  border-radius: 999px;
+}
+
+.affected-shifts-list::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-text-muted);
+}
+
+.affected-shift-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-warning);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-bg-base);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.affected-shift-card:hover {
+  border-color: var(--color-border-hover);
+  border-left-color: var(--color-warning);
+  box-shadow: var(--shadow-sm);
+}
+
+.affected-shift-client,
+.affected-shift-schedule {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.affected-shift-client {
+  flex: 1;
+}
+
+.affected-shift-client strong,
+.affected-shift-schedule strong {
+  color: var(--color-text-main);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.affected-shift-client span,
+.affected-shift-schedule span {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.affected-shift-client strong,
+.affected-shift-client span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.affected-shift-schedule {
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.affected-shifts-actions {
+  flex-shrink: 0;
+  padding-top: 1rem;
+  margin-top: 1.25rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.affected-shifts-actions .btn {
+  min-width: 145px;
+}
+
+.affected-shifts-actions .spinner {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Affected shift loading/checking button */
+.leave-action-checking {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.leave-action-checking .spinner {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Tablet and mobile */
+@media (max-width: 640px) {
+  .affected-shifts-modal {
+    width: 100%;
+    max-height: 92vh;
+    padding: 1.5rem;
+  }
+
+  .affected-shifts-header {
+    gap: 0.75rem;
+  }
+
+  .affected-shifts-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .affected-shifts-list {
+    max-height: 330px;
+  }
+
+  .affected-shift-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .affected-shift-client strong,
+  .affected-shift-client span {
+    white-space: normal;
+  }
+
+  .affected-shift-schedule {
+    width: 100%;
+    text-align: left;
+  }
+
+  .affected-shifts-actions {
+    flex-direction: column-reverse;
+  }
+
+  .affected-shifts-actions .btn {
+    width: 100%;
+    min-width: 0;
+  }
+}
