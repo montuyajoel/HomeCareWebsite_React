@@ -1398,6 +1398,13 @@ select.form-input {
   gap: 1rem;
 }
 
+.leave-type-pill.sick,
+.leave-type-pill.emergency {
+  background-color: #FEE2E2;
+  color: #B91C1C;
+  border-color: #FCA5A5;
+}
+
 .leave-request-card {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
@@ -1462,7 +1469,7 @@ select.form-input {
   border-radius: 999px;
   background-color: var(--color-primary-light);
   color: var(--color-primary-hover);
-  font-size: .800rem;
+  font-size: .900rem;
   font-weight: 700;
   text-transform: capitalize;
 }
@@ -1506,8 +1513,7 @@ select.form-input {
   text-transform: capitalize;
 }
 
-.leave-status-pill.pending,
-.leave-status-pill.active {
+.leave-status-pill.pending { 
   background-color: #FEF3C7;
   color: #92400E;
   border-color: #FDE68A;
@@ -1517,6 +1523,18 @@ select.form-input {
   background-color: #FEE2E2;
   color: #B91C1C;
   border-color: #FCA5A5;
+}
+
+.leave-status-pill.approved {
+  background-color: #DCFCE7;
+  color: #166534;
+  border-color: #BBF7D0;
+}
+
+.leave-status-pill.cancelled {
+  background-color: #E5E7EB;
+  color: #374151;
+  border-color: #D1D5DB;
 }
 
 .admin-leave-page {

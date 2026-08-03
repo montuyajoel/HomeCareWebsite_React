@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Navbar from '../components/Navbar';
+import AffectedShiftsModal from '../components/AffectedShiftsModal';
 import { authService } from '../services/authService';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
@@ -55,7 +56,11 @@ export default function AdminLeaveRequests() {
   const [sortBy, setSortBy] = useState('oldest');
   const [commentRequest, setCommentRequest] = useState(null);
   const [draftComment, setDraftComment] = useState('');
-  const [isSavingComment, setIsSavingComment] = useState(false);
+  const [isCheckingAffectedShifts, setIsCheckingAffectedShifts] = useState(false);
+  const [checkingRequestId, setCheckingRequestId] = useState(null);
+  const [pendingDecision, setPendingDecision] = useState(null);
+  const [affectedShifts, setAffectedShifts] = useState([]);
+  const [isConfirmingDecision, setIsConfirmingDecision] = useState(false);
   const [commentAction, setCommentAction] = useState('comment');
 
   useEffect(() => {
@@ -161,71 +166,117 @@ export default function AdminLeaveRequests() {
     }
   };
 
-  const handleApproveLeave = async (request) => {
-    const updated = await updateLeaveRequest(request.id, 'approved', request.adminNotes || '');
-    if (!updated) return;
+  const checkAffectedShifts = async (request, status, adminNotes = '') => {
+    const token = authService.getToken();
+    if (!token) {
+      alert('Your session has expired. Please sign in again.');
+      return false;
+    }
 
-    setRequests((prev) => (
-      statusFilter === 'pending'
-        ? prev.filter((item) => item.id !== request.id)
-        : prev.map((item) => (
-          item.id === request.id ? { ...item, status: 'approved', updatedAt: new Date().toISOString() } : item
-        ))
-    ));
+    setIsCheckingAffectedShifts(true);
+    setCheckingRequestId(request.id);
+
+    try {
+      const response = await axios.get(
+        `${API_URL}/api/leave-requests/check-affected-shifts`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          params: {
+            employeeCode: request.employeeCode,
+            startDate: request.startDate,
+            endDate: request.endDate
+          }
+        }
+      );
+
+      const shifts = Array.isArray(response.data?.data) ? response.data.data : [];
+
+      setAffectedShifts(shifts);
+      setPendingDecision({ request, status, adminNotes });
+      return true;
+    } catch (error) {
+      alert(error.response?.data?.message || error.message || 'Failed to check affected shifts.');
+      return false;
+    } finally {
+      setIsCheckingAffectedShifts(false);
+      setCheckingRequestId(null);
+    }
   };
 
-  const saveComment = () => {
+  const handleApproveLeave = async (request) => {
+    await checkAffectedShifts(request, 'approved', request.adminNotes || '');
+  };
+
+  const closeCommentModal = () => {
+    if (isCheckingAffectedShifts) return;
+
+    setCommentRequest(null);
+    setDraftComment('');
+    setCommentAction('comment');
+  };
+
+  const handleReviewReject = async () => {
     if (!commentRequest) return;
 
-    if (commentAction === 'reject' && !draftComment.trim()) {
+    if (!draftComment.trim()) {
       alert('A comment is required when rejecting a leave request.');
       return;
     }
 
-    const persistComment = async () => {
-      const token = authService.getToken();
-      if (!token) {
-        alert('Your session has expired. Please sign in again.');
-        return;
-      }
+    const checked = await checkAffectedShifts(
+      commentRequest,
+      'rejected',
+      draftComment.trim()
+    );
 
-      setIsSavingComment(true);
-      try {
-        const nextComment = draftComment.trim();
-        const nextStatus = commentAction === 'reject' ? 'rejected' : commentRequest.status;
-        const response = await axios.put(
-          `${API_URL}/api/leave-requests/update/admin`,
-          {
-            leaveRequestId: commentRequest.id,
-            status: nextStatus,
-            adminNotes: nextComment
-          },
-          { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
-        );
+    if (!checked) return;
 
-        if (!response.data?.success) {
-          throw new Error(response.data?.message || 'Failed to save comment.');
-        }
+    setCommentRequest(null);
+    setDraftComment('');
+    setCommentAction('comment');
+  };
 
-        setRequests((prev) => prev.map((request) => (
-          request.id === commentRequest.id
-            ? { ...request, adminNotes: nextComment, status: nextStatus, updatedAt: new Date().toISOString() }
-            : request
-        )));
-        setCommentRequest(null);
-        setDraftComment('');
+  const closeAffectedShiftsModal = () => {
+    if (isConfirmingDecision) return;
 
-        if (commentAction === 'reject' && statusFilter === 'pending') {
-          setRequests((prev) => prev.filter((request) => request.id !== commentRequest.id));
-        }
-      } catch (error) {
-        alert(error.response?.data?.message || error.message || 'Failed to save comment.');
-      } finally {
-        setIsSavingComment(false);
-      }
-    };
+    setPendingDecision(null);
+    setAffectedShifts([]);
+  };
 
-    persistComment();
+  const confirmLeaveDecision = async () => {
+    if (!pendingDecision) return;
+
+    const { request, status, adminNotes } = pendingDecision;
+    setIsConfirmingDecision(true);
+
+    try {
+      const updated = await updateLeaveRequest(request.id, status, adminNotes);
+      if (!updated) return;
+
+      setRequests(prev => (
+        statusFilter === 'pending'
+          ? prev.filter(item => item.id !== request.id)
+          : prev.map(item => (
+            item.id === request.id
+              ? {
+                ...item,
+                status,
+                adminNotes,
+                updatedAt: new Date().toISOString()
+              }
+              : item
+          ))
+      ));
+
+      setPendingDecision(null);
+      setAffectedShifts([]);
+      alert(`Leave request ${status} successfully.`);
+    } finally {
+      setIsConfirmingDecision(false);
+    }
   };
 
   return (
@@ -339,8 +390,12 @@ export default function AdminLeaveRequests() {
                         {/* <button className="btn btn-outline btn-sm" onClick={() => openComment(request)}>
                           Add Comment
                         </button> */}
-                        <button className="btn btn-primary btn-sm" onClick={() => handleApproveLeave(request)}>
-                          Approve
+                        <button
+                          className="btn btn-primary btn-sm"
+                          onClick={() => handleApproveLeave(request)}
+                          disabled={checkingRequestId === request.id}
+                        >
+                          {checkingRequestId === request.id ? 'Checking...' : 'Approve'}
                         </button>
                         <button className="btn btn-outline btn-sm" onClick={() => openRejectComment(request)}>
                           Reject
@@ -375,19 +430,31 @@ export default function AdminLeaveRequests() {
                 value={draftComment}
                 onChange={(e) => setDraftComment(e.target.value)}
                 placeholder="Add your comment here..."
+                disabled={isCheckingAffectedShifts}
               />
             </div>
 
             <div className="modal-actions">
-              <button className="btn btn-outline" onClick={() => setCommentRequest(null)}>
+              <button className="btn btn-outline" onClick={closeCommentModal} disabled={isCheckingAffectedShifts}>
                 Close
               </button>
-              <button className="btn btn-primary" onClick={saveComment} disabled={isSavingComment}>
-                {isSavingComment ? 'Saving...' : (commentAction === 'reject' ? 'Reject Request' : 'Save Comment')}
+              <button className="btn btn-primary" onClick={handleReviewReject} disabled={isCheckingAffectedShifts}>
+                {isCheckingAffectedShifts ? 'Checking...' : 'Review Affected Shifts'}
               </button>
             </div>
           </div>
         </div>
+      )}
+
+      {pendingDecision && (
+        <AffectedShiftsModal
+          request={pendingDecision.request}
+          status={pendingDecision.status}
+          affectedShifts={affectedShifts}
+          isSubmitting={isConfirmingDecision}
+          onCancel={closeAffectedShiftsModal}
+          onConfirm={confirmLeaveDecision}
+        />
       )}
     </div>
   );

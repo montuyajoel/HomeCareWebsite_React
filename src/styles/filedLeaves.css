@@ -1,0 +1,232 @@
+/* Filed Leaves Modal */
+.filed-leaves-modal {
+  width: min(92vw, 640px);
+  max-width: 640px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.filed-leaves-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.filed-leaves-header h2 {
+  margin: 0;
+}
+
+.filed-leaves-state {
+  padding: 2.5rem;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.filed-leaves-list {
+  max-height: 60vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding-right: 0.25rem;
+}
+
+.filed-leave-card {
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-bg-base);
+  text-align: left;
+}
+
+.filed-leave-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.filed-leave-type {
+  color: var(--color-text-main);
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.filed-leave-status {
+  padding: 0.25rem 0.65rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.filed-leave-dates,
+.filed-leave-reason {
+  color: #475569;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.filed-leave-reason {
+  color: #334155;
+}
+
+.filed-leave-admin-note {
+  margin-top: 0.65rem;
+  padding: 0.5rem 0.75rem;
+  border-left: 3px solid var(--color-primary);
+  border-radius: 6px;
+  background-color: #F1F5F9;
+  color: #334155;
+  font-size: 0.825rem;
+}
+
+.filed-leave-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding-top: 0.85rem;
+  margin-top: 0.85rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.filed-leave-actions .btn {
+  min-width: 112px;
+}
+
+.filed-leaves-footer {
+  flex-shrink: 0;
+  padding-top: 1rem;
+  margin-top: 1rem;
+  border-top: 1px solid var(--color-border);
+}
+
+/* Edit and Cancel Leave Modals */
+.filed-leave-action-overlay {
+  z-index: 1100;
+}
+
+.filed-leave-action-modal {
+  width: min(92vw, 560px);
+  max-width: 560px;
+}
+
+.filed-leave-action-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.filed-leave-action-header h2 {
+  margin-bottom: 0.35rem;
+}
+
+.filed-leave-action-header p {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.filed-leave-date-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.filed-leave-date-grid .form-group {
+  margin-bottom: 0;
+}
+
+.filed-leave-modal-actions {
+  padding-top: 1rem;
+  margin-top: 1.5rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.filed-leave-modal-actions .btn {
+  min-width: 140px;
+}
+
+/* Cancel Leave Confirmation */
+.filed-leave-cancel-modal {
+  text-align: left;
+}
+
+.filed-leave-cancel-icon {
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  border: 1px solid #FCA5A5;
+  border-radius: 50%;
+  background-color: var(--color-error-bg);
+  color: var(--color-error);
+}
+
+.filed-leave-cancel-modal h2 {
+  margin-bottom: 0.65rem;
+}
+
+.filed-leave-cancel-copy {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  line-height: 1.55;
+  margin-bottom: 1.25rem;
+}
+
+.filed-leave-cancel-copy strong {
+  color: var(--color-text-main);
+}
+
+@media (max-width: 640px) {
+  .filed-leaves-modal,
+  .filed-leave-action-modal {
+    width: 100%;
+    padding: 1.5rem;
+  }
+
+  .filed-leaves-header,
+  .filed-leave-card-header {
+    align-items: flex-start;
+  }
+
+  .filed-leave-card-header {
+    flex-direction: column;
+  }
+
+  .filed-leave-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filed-leave-actions .btn {
+    width: 100%;
+  }
+
+  .filed-leave-date-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .filed-leave-modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .filed-leave-modal-actions .btn {
+    width: 100%;
+    min-width: 0;
+  }
+}
