@@ -10,6 +10,7 @@ import CaregiverDashboard from './pages/CaregiverDashboard';
 import CaregiverUpcomingShifts from './pages/CaregiverUpcomingShifts';
 import AdminLeaveRequests from './pages/AdminLeaveRequests';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminCaregiversDirectory from './pages/AdminCaregiversDirectory';
 import ProtectedRoute from './components/ProtectedRoute';
 import './styles/global.css';
 
@@ -54,6 +55,14 @@ function App() {
           element={
             <ProtectedRoute allowedRole="admin">
               <AdminLeaveRequests />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/caregivers"
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <AdminCaregiversDirectory />
             </ProtectedRoute>
           }
         />

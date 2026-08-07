@@ -1,0 +1,718 @@
+/* src/pages/AdminCaregiversDirectory.css */
+
+.admin-caregivers-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.admin-caregivers-title {
+  margin: 0 0 0.25rem;
+  font-size: 1.75rem;
+}
+
+.admin-caregivers-subtitle {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.admin-caregivers-header-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.admin-caregivers-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+}
+
+.admin-caregivers-control {
+  margin: 0;
+}
+
+.admin-caregivers-state-card,
+.admin-caregivers-empty-card {
+  display: flex;
+  min-height: 300px;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-caregivers-muted-text {
+  color: var(--color-text-muted);
+}
+
+.admin-caregivers-error-card {
+  padding: 2rem;
+  border: 1px solid var(--color-error);
+  background: var(--color-error-bg);
+  color: var(--color-error);
+  text-align: center;
+}
+
+.admin-caregivers-error-card p {
+  margin: 0;
+}
+
+.admin-caregivers-empty-card {
+  flex-direction: column;
+  padding: 2rem;
+  text-align: center;
+}
+
+.admin-caregivers-empty-icon {
+  margin-bottom: 1rem;
+}
+
+.admin-caregivers-empty-title {
+  margin: 0 0 0.25rem;
+}
+
+.admin-caregivers-empty-text {
+  margin: 0 0 1rem;
+  color: var(--color-text-muted);
+}
+
+.admin-caregivers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.admin-caregiver-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem;
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  text-align: center;
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.admin-caregiver-card:hover {
+  border-color: var(--color-primary-hover);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-4px);
+}
+
+.admin-caregiver-card:focus-within {
+  border-color: var(--color-primary-hover);
+  box-shadow: var(--shadow-lg);
+}
+
+.admin-caregiver-avatar {
+  display: flex;
+  width: 64px;
+  height: 64px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  border-radius: 50%;
+  box-shadow: var(--shadow-sm);
+  color: #ffffff;
+  font-size: 1.25rem;
+  font-weight: 700;
+  user-select: none;
+}
+
+.admin-caregiver-avatar--0 {
+  background: linear-gradient(135deg, #60a5fa, #3b82f6);
+}
+
+.admin-caregiver-avatar--1 {
+  background: linear-gradient(135deg, #34d399, #059669);
+}
+
+.admin-caregiver-avatar--2 {
+  background: linear-gradient(135deg, #fbbf24, #d97706);
+}
+
+.admin-caregiver-avatar--3 {
+  background: linear-gradient(135deg, #f87171, #dc2626);
+}
+
+.admin-caregiver-avatar--4 {
+  background: linear-gradient(135deg, #c084fc, #8b5cf6);
+}
+
+.admin-caregiver-avatar--5 {
+  background: linear-gradient(135deg, #f472b6, #db2777);
+}
+
+.admin-caregiver-name {
+  margin: 0 0 0.25rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.admin-caregiver-code {
+  margin-bottom: 0.75rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  background: #f1f5f9;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.admin-caregiver-status-wrap {
+  margin-bottom: 1rem;
+}
+
+.admin-caregiver-status {
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.admin-caregiver-status--active {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.admin-caregiver-status--inactive {
+  background: #f1f5f9;
+  color: var(--color-text-muted);
+}
+
+.admin-caregiver-skills {
+  display: flex;
+  width: 100%;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.25rem;
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.admin-caregiver-skill,
+.admin-caregiver-skill-more {
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+.admin-caregiver-skill {
+  background: #f1f5f9;
+  color: var(--color-text-main);
+}
+
+.admin-caregiver-skill-more {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.admin-caregiver-no-skills {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-style: italic;
+}
+
+.admin-caregiver-create-modal {
+  max-width: 750px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.admin-caregiver-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.admin-caregiver-modal-title {
+  margin: 0;
+}
+
+.admin-caregiver-modal-close,
+.admin-notification-close,
+.admin-caregiver-selected-skill-remove,
+.admin-caregiver-remove-slot-button {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.admin-caregiver-modal-close {
+  color: var(--color-text-muted);
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.admin-caregiver-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.admin-caregiver-form-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.admin-caregiver-form-grid--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-caregiver-form-grid--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.admin-caregiver-form-grid--phone {
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+}
+
+.admin-caregiver-form-grid--spaced,
+.admin-caregiver-form-group-spaced {
+  margin-bottom: 1rem;
+}
+
+.admin-caregiver-allergy-row {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.admin-caregiver-checkbox {
+  width: 1.2rem;
+  height: 1.2rem;
+  cursor: pointer;
+}
+
+.admin-caregiver-checkbox-label {
+  margin: 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.admin-caregiver-helper-text {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+.admin-caregiver-form-section {
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.admin-caregiver-section-title {
+  margin: 0 0 1rem;
+  color: var(--color-text-main);
+}
+
+.admin-caregiver-geocode-card {
+  padding: 0.75rem 1rem;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1e3a8a;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.admin-caregiver-skills-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.admin-caregiver-skill-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.admin-caregiver-skill-checkbox {
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+}
+
+.admin-caregiver-skill-label {
+  cursor: pointer;
+  font-size: 0.875rem;
+  user-select: none;
+}
+
+.admin-caregiver-custom-skill-row {
+  display: flex;
+  max-width: 400px;
+  gap: 0.5rem;
+}
+
+.admin-caregiver-compact-input {
+  padding: 0.5rem;
+}
+
+.admin-caregiver-add-skill-button {
+  padding: 0.5rem 1rem;
+}
+
+.admin-caregiver-selected-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.admin-caregiver-selected-skill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  background: var(--color-primary-light);
+  color: var(--color-primary-hover);
+  font-size: 0.8rem;
+}
+
+.admin-caregiver-selected-skill-remove {
+  padding: 0;
+  color: var(--color-primary-hover);
+  font-weight: 700;
+}
+
+.admin-caregiver-availability-editor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border-radius: var(--radius-sm);
+  background: #f8fafc;
+}
+
+.admin-caregiver-availability-field {
+  flex: 1;
+  margin: 0;
+}
+
+.admin-caregiver-availability-field--day {
+  min-width: 120px;
+}
+
+.admin-caregiver-availability-field--time {
+  min-width: 100px;
+}
+
+.admin-caregiver-add-slot-button {
+  height: 42px;
+  padding: 0.5rem 1.25rem;
+}
+
+.admin-caregiver-availability-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-caregiver-availability-empty {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+.admin-caregiver-availability-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: #f8fafc;
+}
+
+.admin-caregiver-availability-day {
+  font-weight: 500;
+}
+
+.admin-caregiver-availability-time {
+  color: var(--color-text-muted);
+}
+
+.admin-caregiver-remove-slot-button {
+  padding: 2px 6px;
+  color: var(--color-error);
+  font-weight: 700;
+}
+
+.admin-caregiver-modal-actions {
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 2rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.admin-notification-overlay {
+  z-index: 1500;
+}
+
+.admin-notification-card {
+  width: min(460px, calc(100% - 2rem));
+  padding: 1.5rem;
+  box-shadow: var(--shadow-lg);
+}
+
+.admin-notification-card--success {
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+}
+
+.admin-notification-card--warning {
+  border: 1px solid #fde68a;
+  background: #fffbeb;
+}
+
+.admin-notification-card--danger,
+.admin-notification-card--error {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+}
+
+.admin-notification-card--info {
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+}
+
+.admin-notification-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.admin-notification-title {
+  margin: 0 0 0.5rem;
+}
+
+.admin-notification-card--success .admin-notification-title {
+  color: #166534;
+}
+
+.admin-notification-card--warning .admin-notification-title {
+  color: #92400e;
+}
+
+.admin-notification-card--danger .admin-notification-title,
+.admin-notification-card--error .admin-notification-title {
+  color: #991b1b;
+}
+
+.admin-notification-card--info .admin-notification-title {
+  color: #1e3a8a;
+}
+
+.admin-notification-message {
+  margin: 0;
+  color: var(--color-text-main);
+  line-height: 1.5;
+}
+
+.admin-notification-close {
+  padding: 0;
+  color: var(--color-text-muted);
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.admin-notification-actions {
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+@media (max-width: 768px) {
+  .admin-caregivers-header {
+    align-items: stretch;
+  }
+
+  .admin-caregivers-header-actions {
+    width: 100%;
+  }
+
+  .admin-caregivers-header-actions .btn {
+    flex: 1;
+  }
+
+  .admin-caregiver-form-grid--2,
+  .admin-caregiver-form-grid--3,
+  .admin-caregiver-form-grid--phone {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-caregiver-allergy-row {
+    margin-top: 0;
+  }
+
+  .admin-caregiver-custom-skill-row {
+    max-width: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .admin-caregivers-controls {
+    grid-template-columns: 1fr;
+    padding: 1rem;
+  }
+
+  .admin-caregivers-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-caregiver-availability-editor {
+    align-items: stretch;
+  }
+
+  .admin-caregiver-availability-field,
+  .admin-caregiver-add-slot-button {
+    width: 100%;
+  }
+
+  .admin-caregiver-availability-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-caregiver-modal-actions,
+  .admin-notification-actions {
+    flex-direction: column-reverse;
+  }
+
+  .admin-caregiver-modal-actions .btn,
+  .admin-notification-actions .btn {
+    width: 100%;
+  }
+}
+
+.admin-notification-overlay {
+  z-index: 1500;
+}
+
+.admin-notification-card {
+  width: min(460px, calc(100% - 2rem));
+  padding: 1.5rem;
+  background: #FFFFFF;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-lg);
+}
+
+.admin-notification-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.admin-notification-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #F8FAFC;
+}
+
+.admin-notification-icon {
+  flex-shrink: 0;
+}
+
+.admin-notification-icon--success {
+  color: #16A34A;
+}
+
+.admin-notification-icon--warning {
+  color: #D97706;
+}
+
+.admin-notification-icon--danger,
+.admin-notification-icon--error {
+  color: #DC2626;
+}
+
+.admin-notification-icon--info {
+  color: #2563EB;
+}
+
+.admin-notification-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-notification-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.admin-notification-title {
+  margin: 0 0 0.5rem;
+  color: var(--color-text-main);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.admin-notification-message {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.admin-notification-close {
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.admin-notification-close:hover {
+  color: var(--color-text-main);
+}
+
+.admin-notification-actions {
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+@media (max-width: 480px) {
+  .admin-notification-card {
+    padding: 1.25rem;
+  }
+
+  .admin-notification-content {
+    gap: 0.75rem;
+  }
+
+  .admin-notification-icon-wrapper {
+    width: 38px;
+    height: 38px;
+  }
+}
