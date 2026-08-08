@@ -5,13 +5,19 @@ import Navbar from '../components/Navbar';
 import DashboardCard from '../components/DashboardCard';
 import FiledLeavesModal from '../components/FiledLeavesModal';
 import { authService } from '../services/authService';
+import UserProfileModal from '../components/UserProfileModal';
 import axios from 'axios';
+
+//Icon
+import { CheckCircle2 } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
 export default function CaregiverDashboard() {
   const navigate = useNavigate();
   const user = authService.getCurrentUser();
+  const [detailUser, setDetailUser] = useState(user);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [shifts, setShifts] = useState([]);
   const [isLoadingShifts, setIsLoadingShifts] = useState(true);
   const [carePlanLoadingShiftId, setCarePlanLoadingShiftId] = useState(null);
@@ -76,6 +82,33 @@ export default function CaregiverDashboard() {
       }
     };
     fetchRealShifts();
+  }, []);
+
+  // Get Detailed user info on mount
+  useEffect(() => {
+    const getDetailUserInfo = async () => { 
+      setIsLoadingUser(true);
+      const token = authService.getToken();
+      if (!token) {
+        setIsLoadingUser(false);
+        return;
+      }
+
+      try {
+        const response = await axios.get(`${API_URL}/api/caregivers/${user?.employeeCode}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (response.data && response.data.success) {
+          setDetailUser(response.data.data);
+        }
+      } catch (err) {
+        console.error('Error fetching user details:', err);
+      } finally {
+        setIsLoadingUser(false);
+      }
+    };
+
+    getDetailUserInfo();
   }, []);
 
   const getCurrentPosition = () => new Promise((resolve, reject) => {
@@ -600,14 +633,18 @@ export default function CaregiverDashboard() {
                       </div>
                     )}
 
-                    <div className="shift-actions">
+                   <div className="shift-actions">
                       <button 
                         className={`btn btn-sm ${shift.hasCarePlan ? 'btn-outline' : 'btn-disabled'}`}
                         onClick={() => handleViewCarePlan(shift)}
                         disabled={!shift.hasCarePlan || carePlanLoadingShiftId === shift.id}
                         title={shift.hasCarePlan ? 'View official Client Care Plan PDF' : 'No care plan file uploaded'}
                       >
-                        {carePlanLoadingShiftId === shift.id ? 'Opening Plan...' : (shift.hasCarePlan ? 'Care Plan PDF' : 'No Care Plan')}
+                        {carePlanLoadingShiftId === shift.id
+                          ? 'Opening Plan...'
+                          : shift.hasCarePlan
+                            ? 'Care Plan PDF'
+                            : 'No Care Plan'}
                       </button>
 
                       {shift.status === 'Pending' && (
@@ -616,7 +653,9 @@ export default function CaregiverDashboard() {
                           className="btn btn-primary btn-sm"
                           disabled={clockInSubmittingShiftId === shift.id}
                         >
-                          {clockInSubmittingShiftId === shift.id ? 'Clocking In...' : 'Clock In'}
+                          {clockInSubmittingShiftId === shift.id
+                            ? 'Clocking In...'
+                            : 'Clock In'}
                         </button>
                       )}
 
@@ -626,13 +665,16 @@ export default function CaregiverDashboard() {
                           className="btn btn-danger btn-sm"
                           disabled={clockOutSubmittingShiftId === shift.id}
                         >
-                          {clockOutSubmittingShiftId === shift.id ? 'Clocking Out...' : 'Clock Out'}
+                          {clockOutSubmittingShiftId === shift.id
+                            ? 'Clocking Out...'
+                            : 'Clock Out'}
                         </button>
                       )}
 
                       {shift.status === 'Completed' && (
                         <span className="completed-label">
-                          Log Verified ({shift.clockOutTime || 'Done'})
+                          <CheckCircle2 size={16} strokeWidth={2.5} />
+                          Log Verified
                         </span>
                       )}
                     </div>
@@ -853,44 +895,12 @@ export default function CaregiverDashboard() {
           </div>
         </div>
       )}
-
-      {/* Profile Detail Modal */}
-      {profileModalOpen && (
-        <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
-          <div className="modal-content card">
-            <h2 id="profile-modal-title">Employee Profile</h2>
-            <div className="profile-details-list">
-              <div className="profile-detail-row">
-                <strong>Full Name:</strong>
-                <span>{user?.fullName}</span>
-              </div>
-              <div className="profile-detail-row">
-                <strong>Employee Code:</strong>
-                <span>{user?.employeeCode}</span>
-              </div>
-              <div className="profile-detail-row">
-                <strong>Assigned Role:</strong>
-                <span style={{ textTransform: 'capitalize' }}>{user?.role}</span>
-              </div>
-              <div className="profile-detail-row">
-                <strong>Base Office:</strong>
-                <span>Dublin HQ Office</span>
-              </div>
-              <div className="profile-detail-row">
-                <strong>System ID:</strong>
-                <code style={{ fontSize: '0.8rem', background: '#F1F5F9', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>
-                  {user?.id || 'MOCK_USER_ID_992'}
-                </code>
-              </div>
-            </div>
-            <div className="modal-actions" style={{ justifyContent: 'flex-end', marginTop: '1.5rem' }}>
-              <button type="button" className="btn btn-primary" onClick={() => setProfileModalOpen(false)}>
-                Close Profile
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      
+      <UserProfileModal
+        isOpen={profileModalOpen}
+        onClose={() => setProfileModalOpen(false)}
+        detailUser={detailUser}
+      />
 
       {/* Filed Leaves Modal */}
       <FiledLeavesModal

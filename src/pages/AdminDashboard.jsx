@@ -402,7 +402,7 @@ export default function AdminDashboard() {
               </div>
             </button>
 
-            <button className="shortcut-action-card card" onClick={() => openManagementDrawer('caregiver')}>
+            <button className="shortcut-action-card card" onClick={() => navigate('/admin/caregivers')}>
               <div className="action-card-icon orange">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
