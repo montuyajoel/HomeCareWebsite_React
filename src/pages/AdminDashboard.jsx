@@ -377,7 +377,8 @@ export default function AdminDashboard() {
         <div className="management-shortcuts-section">
           <h3 className="section-title-sub">Quick Administration Actions</h3>
           <div className="admin-shortcuts-grid">
-            <button className="shortcut-action-card card" onClick={() => openManagementDrawer('schedule')}>
+            {/* <button className="shortcut-action-card card" onClick={() => openManagementDrawer('schedule')}>*/}
+            <button className="shortcut-action-card card" onClick={() => { navigate('/admin/assign-schedule')} }>
               <div className="action-card-icon blue">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
@@ -565,22 +566,23 @@ export default function AdminDashboard() {
                 </p>
                 
                 {/* Simplified Mock Adding/Editing form to feel high-fidelity */}
-                {activeDrawer === 'schedule' && (
+                {/*{activeDrawer === 'schedule' && (
                   <div className="mock-drawer-form">
                     <div className="form-group">
                       <label className="form-label">Caregiver Employee Code</label>
-                      <input type="text" className="form-input" placeholder="e.g. EMP2002" />
+                      <input type="text" className="form-input" placeholder="e.g. EMP002" />
                     </div>
                     <div className="form-group">
                       <label className="form-label">Client Code</label>
-                      <input type="text" className="form-input" placeholder="e.g. CL001" />
+                      <input type="text" className="form-input" placeholder="e.g. CLT001" />
                     </div>
                     <div className="form-group">
-                      <label className="form-label">Shift Timing</label>
-                      <input type="text" className="form-input" placeholder="e.g. 09:00 AM - 12:00 PM" />
+                      <label className="form-label">Shift Timing</label>*/}
+                      {/*<input type="text" className="form-input" placeholder="e.g. 09:00 AM - 12:00 PM" />
+                      <input type="text" className="form-input" placeholder="e.g. 09:00 - 14:00 " />
                     </div>
                   </div>
-                )}
+                )} */}
 
                 {activeDrawer === 'client' && (
                   <div className="mock-drawer-form">

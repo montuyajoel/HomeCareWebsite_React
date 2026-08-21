@@ -1,8 +1,13 @@
-// src/components/AuthLayout.jsx
+//src/components/AuthLayout.jsx
+/*This is a React component file that defines a reusable "authentication page layout" (AuthLayout),
+used to share the same shell design across login, register, and similar pages. */
 import React from 'react';
+//Importing the Link component from react-router-dom for navigation, between routes without reloading the page
 import { Link } from 'react-router-dom';
+//imports the global CSS file for styling the component
 import '../styles/global.css';
 
+//function component that takes in children, title, and subtitle as props
 export default function AuthLayout({ children, title, subtitle }) {
   return (
     <div className="auth-container">

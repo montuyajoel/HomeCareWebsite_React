@@ -1,3 +1,6 @@
+//components/AffectedShiftsModal.jsx
+//Its purpose is to show the scheduled shifts that will be affected when an admin approves
+//or rejects a caregiver’s leave request.
 import React from 'react';
 import '../styles/affectedShifts.css';
 

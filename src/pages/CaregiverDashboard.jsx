@@ -728,7 +728,7 @@ export default function CaregiverDashboard() {
                     <line x1="16" y1="14" x2="16" y2="18" />
                   </svg>
                 </div>
-                <h3>14-Day Shift Calendar</h3>
+                <h3>2 Weeks Shift Calendar</h3>
                 <p>View your upcoming shifts in calendar layout</p>
               </button>
 
