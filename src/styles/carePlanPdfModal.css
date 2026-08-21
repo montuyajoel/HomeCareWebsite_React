@@ -1,0 +1,102 @@
+/* Care Plan PDF modal — wide viewer aligned with existing modal patterns */
+
+.care-plan-pdf-modal {
+  width: min(960px, calc(100% - 2rem));
+  max-width: 960px;
+  max-height: 95vh;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  overflow: hidden;
+}
+
+.care-plan-pdf-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.care-plan-pdf-modal-heading {
+  min-width: 0;
+}
+
+.care-plan-pdf-modal-title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--color-text-main);
+}
+
+.care-plan-pdf-modal-subtitle {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.care-plan-pdf-modal-close {
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.care-plan-pdf-modal-close:hover {
+  color: var(--color-text-main);
+}
+
+.care-plan-pdf-modal-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.care-plan-pdf-iframe {
+  width: 100%;
+  height: 75vh;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: #F8FAFC;
+}
+
+.care-plan-pdf-modal-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 12rem;
+  padding: 1.5rem;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+.care-plan-pdf-modal-error {
+  color: #B91C1C;
+}
+
+.care-plan-pdf-modal-actions {
+  margin-top: 1rem;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .care-plan-pdf-modal {
+    width: calc(100% - 1rem);
+    max-height: 98vh;
+    padding: 1rem;
+  }
+
+  .care-plan-pdf-iframe {
+    height: 65vh;
+  }
+}

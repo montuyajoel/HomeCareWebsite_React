@@ -1,11 +1,13 @@
 // src/pages/CaregiverDashboard.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import DashboardCard from '../components/DashboardCard';
 import FiledLeavesModal from '../components/FiledLeavesModal';
 import { authService } from '../services/authService';
 import UserProfileModal from '../components/UserProfileModal';
+import ClientDetailsModal from '../components/ClientDetailsModal';
+import CarePlanPdfModal from '../components/CarePlanPdfModal';
 import axios from 'axios';
 
 //Icon
@@ -21,6 +23,13 @@ export default function CaregiverDashboard() {
   const [shifts, setShifts] = useState([]);
   const [isLoadingShifts, setIsLoadingShifts] = useState(true);
   const [carePlanLoadingShiftId, setCarePlanLoadingShiftId] = useState(null);
+  const [carePlanModal, setCarePlanModal] = useState({
+    isOpen: false,
+    clientName: '',
+    pdfUrl: null,
+    error: null
+  });
+  const carePlanRequestIdRef = useRef(0);
   const [clockInSubmittingShiftId, setClockInSubmittingShiftId] = useState(null);
   const [clockOutSubmittingShiftId, setClockOutSubmittingShiftId] = useState(null);
 
@@ -42,6 +51,9 @@ export default function CaregiverDashboard() {
   // Filed leaves modal state
   const [filedLeavesModalOpen, setFiledLeavesModalOpen] = useState(false);
 
+  // Client details modal (today's shift card click)
+  const [selectedClientShift, setSelectedClientShift] = useState(null);
+
   // Fetch real shifts if they are available on the backend
   useEffect(() => {
     const fetchRealShifts = async () => {
@@ -62,6 +74,7 @@ export default function CaregiverDashboard() {
             id: s.scheduleId || `b_shift_${idx}`,
             visitId: s.visitLogId || null,
             clientId: s.client?._id || '',
+            client: s.client || null,
             clientName: s.client?.fullName || 'Active Client',
             clientCode: s.client?.clientCode || 'CL000',
             address: s.client?.address ? `${s.client.address.addressLine}, ${s.client.address.county} ${s.client.address.city}, ${s.client.address.postCode}` : 'Not Specified',
@@ -389,47 +402,92 @@ export default function CaregiverDashboard() {
     await performClockOut(shiftNotice.shiftId, trimmedComment);
   };
 
+  const closeCarePlanModal = () => {
+    carePlanRequestIdRef.current += 1;
+    setCarePlanLoadingShiftId(null);
+    setCarePlanModal((prev) => {
+      if (prev.pdfUrl) {
+        URL.revokeObjectURL(prev.pdfUrl);
+      }
+      return {
+        isOpen: false,
+        clientName: '',
+        pdfUrl: null,
+        error: null
+      };
+    });
+  };
+
   const handleViewCarePlan = async (shift) => {
     if (!shift.hasCarePlan) {
       return;
     }
 
+    const requestId = ++carePlanRequestIdRef.current;
     const token = authService.getToken();
     if (!token) {
-      alert('Your session has expired. Please sign in again.');
+      setCarePlanModal({
+        isOpen: true,
+        clientName: shift.clientName || '',
+        pdfUrl: null,
+        error: 'Your session has expired. Please sign in again.'
+      });
       return;
     }
 
     setCarePlanLoadingShiftId(shift.id);
-    const carePlanWindow = window.open('', '_blank');
+    setCarePlanModal((prev) => {
+      if (prev.pdfUrl) {
+        URL.revokeObjectURL(prev.pdfUrl);
+      }
+      return {
+        isOpen: true,
+        clientName: shift.clientName || '',
+        pdfUrl: null,
+        error: null
+      };
+    });
 
     try {
-      const response = await axios.get(`${API_URL}/api/clients/care-plan/${shift.clientCode}`, {
+      const response = await axios.get(`${API_URL}/api/clients/careplan/download/${shift.clientCode}`, {
         headers: { Authorization: `Bearer ${token}` },
         responseType: 'blob'
       });
+
+      if (requestId !== carePlanRequestIdRef.current) {
+        return;
+      }
 
       const blob = new Blob([response.data], {
         type: response.headers['content-type'] || 'application/pdf'
       });
       const blobUrl = URL.createObjectURL(blob);
 
-      if (carePlanWindow) {
-        carePlanWindow.location.href = blobUrl;
-        carePlanWindow.focus();
-      } else {
-        window.location.assign(blobUrl);
+      setCarePlanModal({
+        isOpen: true,
+        clientName: shift.clientName || '',
+        pdfUrl: blobUrl,
+        error: null
+      });
+    } catch (error) {
+      if (requestId !== carePlanRequestIdRef.current) {
+        return;
       }
 
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
-    } catch (error) {
-      if (error.response?.status === 404) {
-        alert('No care plan file is currently available for this client.');
-      } else {
-        alert('Unable to open care plan right now. Please try again.');
-      }
+      const message = error.response?.status === 404
+        ? 'No care plan file is currently available for this client.'
+        : 'Unable to open care plan right now. Please try again.';
+
+      setCarePlanModal({
+        isOpen: true,
+        clientName: shift.clientName || '',
+        pdfUrl: null,
+        error: message
+      });
     } finally {
-      setCarePlanLoadingShiftId(null);
+      if (requestId === carePlanRequestIdRef.current) {
+        setCarePlanLoadingShiftId(null);
+      }
     }
   };
 
@@ -555,7 +613,21 @@ export default function CaregiverDashboard() {
             ) : (
               <div className="shifts-list">
                 {shifts.map((shift) => (
-                  <DashboardCard key={shift.id} className="shift-card">
+                  <DashboardCard
+                    key={shift.id}
+                    className="shift-card shift-card-clickable"
+                    role="button"
+                    tabIndex={0}
+                    titleAttr={`View client details for ${shift.clientName}`}
+                    aria-label={`View client details for ${shift.clientName}`}
+                    onClick={() => setSelectedClientShift(shift)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setSelectedClientShift(shift);
+                      }
+                    }}
+                  >
                     <div className="shift-header">
                       <div>
                         <h3>{shift.clientName}</h3>
@@ -594,7 +666,13 @@ export default function CaregiverDashboard() {
                     </div>
 
                     {shiftNotice && shiftNotice.shiftId === shift.id && (
-                      <div className="shift-notice-card" role="status" aria-live="polite">
+                      <div
+                        className="shift-notice-card"
+                        role="status"
+                        aria-live="polite"
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()}
+                      >
                         <div className="shift-notice-header">
                           <div className="shift-notice-title-wrap">
                             <strong>Action required</strong>
@@ -633,7 +711,7 @@ export default function CaregiverDashboard() {
                       </div>
                     )}
 
-                   <div className="shift-actions">
+                   <div className="shift-actions" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                       <button 
                         className={`btn btn-sm ${shift.hasCarePlan ? 'btn-outline' : 'btn-disabled'}`}
                         onClick={() => handleViewCarePlan(shift)}
@@ -900,6 +978,24 @@ export default function CaregiverDashboard() {
         isOpen={profileModalOpen}
         onClose={() => setProfileModalOpen(false)}
         detailUser={detailUser}
+      />
+
+      <ClientDetailsModal
+        isOpen={Boolean(selectedClientShift)}
+        client={selectedClientShift?.client || {
+          fullName: selectedClientShift?.clientName,
+          clientCode: selectedClientShift?.clientCode
+        }}
+        onClose={() => setSelectedClientShift(null)}
+      />
+
+      <CarePlanPdfModal
+        isOpen={carePlanModal.isOpen}
+        title={carePlanModal.clientName}
+        pdfUrl={carePlanModal.pdfUrl}
+        isLoading={Boolean(carePlanLoadingShiftId)}
+        error={carePlanModal.error}
+        onClose={closeCarePlanModal}
       />
 
       {/* Filed Leaves Modal */}
