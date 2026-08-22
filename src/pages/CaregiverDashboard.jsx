@@ -9,11 +9,10 @@ import UserProfileModal from '../components/UserProfileModal';
 import ClientDetailsModal from '../components/ClientDetailsModal';
 import CarePlanPdfModal from '../components/CarePlanPdfModal';
 import axios from 'axios';
+import { API_URL } from '../config/api';
 
 //Icon
 import { CheckCircle2 } from 'lucide-react';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
 export default function CaregiverDashboard() {
   const navigate = useNavigate();

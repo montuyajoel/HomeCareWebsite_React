@@ -1,8 +1,7 @@
 // src/services/scheduleService.js
 import axios from 'axios';
 import { authService } from './authService';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+import { API_URL } from '../config/api';
 
 // Builds the Authorization header using the token saved by authService at login.
 // Every protected endpoint (protect + adminOnly) requires this header.

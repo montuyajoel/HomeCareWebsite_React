@@ -6,8 +6,7 @@ import DashboardCard from '../components/DashboardCard';
 import AffectedShiftsModal from '../components/AffectedShiftsModal';
 import { authService } from '../services/authService';
 import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+import { API_URL } from '../config/api';
 
 const formatShiftTime = (time) => {
   if (!time) return '—';
