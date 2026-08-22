@@ -11,6 +11,8 @@ import CaregiverUpcomingShifts from './pages/CaregiverUpcomingShifts';
 import AdminLeaveRequests from './pages/AdminLeaveRequests';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminCaregiversDirectory from './pages/AdminCaregiversDirectory';
+import AdminClientsDirectory from './pages/AdminClientsDirectory';
+import AssignSchedule from './pages/AssignSchedule';
 import ProtectedRoute from './components/ProtectedRoute';
 import './styles/global.css';
 
@@ -66,6 +68,24 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/admin/clients"
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <AdminClientsDirectory />
+            </ProtectedRoute>
+          }
+        />
+        {/*scheduling form */}
+        <Route
+          path="/admin/assign-schedule"
+          element={
+          <ProtectedRoute allowedRole="admin">
+            <AssignSchedule />
+          </ProtectedRoute>}
+        />
+
+
 
         {/* Default Wildcard Catch-all */}
         <Route path="*" element={<Navigate to="/" replace />} />

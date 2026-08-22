@@ -6,8 +6,141 @@ import DashboardCard from '../components/DashboardCard';
 import AffectedShiftsModal from '../components/AffectedShiftsModal';
 import { authService } from '../services/authService';
 import axios from 'axios';
+import { API_URL } from '../config/api';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+const formatShiftTime = (time) => {
+  if (!time) return '—';
+  return String(time).slice(0, 5);
+};
+
+const formatClientLocation = (address) => {
+  if (!address) return '—';
+  const parts = [address.addressLine, address.town, address.city, address.postCode].filter(Boolean);
+  return parts.length > 0 ? parts.join(', ') : '—';
+};
+
+const formatVisitStatusLabel = (visitStatus, scheduleStatus) => {
+  if (visitStatus) {
+    return String(visitStatus)
+      .split('-')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  }
+
+  if (scheduleStatus) {
+    return String(scheduleStatus)
+      .split('-')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  }
+
+  return 'Not started';
+};
+
+const getVisitStatusClass = (visitStatus, scheduleStatus) =>
+  String(visitStatus || scheduleStatus || 'pending')
+    .toLowerCase()
+    .replace(/\s+/g, '-');
+
+const pickRelevantShift = (schedules = {}) => {
+  const current = schedules.current || [];
+  const upcoming = schedules.upcoming || [];
+  const done = schedules.done || [];
+
+  if (current.length > 0) {
+    return { schedule: current[0], phase: 'current', label: 'Current' };
+  }
+  if (upcoming.length > 0) {
+    return { schedule: upcoming[0], phase: 'upcoming', label: 'Upcoming' };
+  }
+  if (done.length > 0) {
+    return { schedule: done[done.length - 1], phase: 'done', label: 'Last' };
+  }
+  return null;
+};
+
+const getSchedulePhaseCounts = (item) => {
+  const counts = item.counts || {};
+  const schedules = item.schedules || {};
+  const fromArrays = {
+    current: Array.isArray(schedules.current) ? schedules.current.length : 0,
+    upcoming: Array.isArray(schedules.upcoming) ? schedules.upcoming.length : 0,
+    done: Array.isArray(schedules.done) ? schedules.done.length : 0
+  };
+
+  return {
+    current: Math.max(fromArrays.current, Number(counts.current) || 0),
+    upcoming: Math.max(fromArrays.upcoming, Number(counts.upcoming) || 0),
+    done: Math.max(fromArrays.done, Number(counts.done) || 0)
+  };
+};
+
+const currentUpcomingDoneTotal = ({ current = 0, upcoming = 0, done = 0 } = {}) =>
+  current + upcoming + done;
+
+const normalizeOnDutyCaregiver = (item) => {
+  const caregiver = item.caregiver || item;
+  const relevant = pickRelevantShift(item.schedules);
+  const schedule = relevant?.schedule;
+  const client = schedule?.client;
+  const phaseCounts = getSchedulePhaseCounts(item);
+  const scheduleCount = currentUpcomingDoneTotal(phaseCounts) || Number(item.scheduleCount) || 0;
+
+  return {
+    id: caregiver._id || caregiver.employeeCode,
+    name: caregiver.fullName || 'N/A',
+    code: caregiver.employeeCode || 'N/A',
+    onDuty: Boolean(item.onDuty),
+    phase: relevant?.phase || null,
+    phaseLabel: relevant?.label || '—',
+    clientName: client?.fullName || '—',
+    shiftWindow: schedule
+      ? `${formatShiftTime(schedule.startTime)}–${formatShiftTime(schedule.endTime)}`
+      : '—',
+    visitStatus: schedule?.visitStatus || null,
+    visitStatusLabel: formatVisitStatusLabel(schedule?.visitStatus, schedule?.scheduleStatus),
+    visitStatusClass: getVisitStatusClass(schedule?.visitStatus, schedule?.scheduleStatus),
+    location: formatClientLocation(client?.address),
+    currentCount: phaseCounts.current,
+    upcomingCount: phaseCounts.upcoming,
+    doneCount: phaseCounts.done,
+    scheduleCount
+  };
+};
+
+const calculateTodayVisitStats = (caregiverRows = [], summary = {}) => {
+  const totals = caregiverRows.reduce(
+    (acc, row) => {
+      const current = Number(row.currentCount) || 0;
+      const upcoming = Number(row.upcomingCount) || 0;
+      const done = Number(row.doneCount) || 0;
+      let rowTotal = current + upcoming + done;
+
+      if (rowTotal === 0 && Number(row.scheduleCount) > 0) {
+        rowTotal = Number(row.scheduleCount);
+        acc.pending += rowTotal;
+      } else {
+        acc.completed += done;
+        acc.pending += current + upcoming;
+      }
+
+      acc.total += rowTotal;
+      return acc;
+    },
+    { total: 0, completed: 0, pending: 0 }
+  );
+
+  const summaryTotal = Number(summary.totalSchedules);
+  const totalVisits = Number.isFinite(summaryTotal)
+    ? Math.max(summaryTotal, totals.total)
+    : totals.total;
+
+  return {
+    totalVisits,
+    completedVisits: totals.completed,
+    pendingVisits: totals.pending > 0 ? totals.pending : Math.max(0, totalVisits - totals.completed)
+  };
+};
 
 const normalizeLeaveRequest = (item) => ({
   id: item._id,
@@ -29,20 +162,17 @@ export default function AdminDashboard() {
 
   // Metrics
   const [stats, setStats] = useState({
-    totalVisits: 28,
-    completedVisits: 16,
-    pendingVisits: 12,
-    onDutyCount: 8,
+    totalVisits: 0,
+    completedVisits: 0,
+    pendingVisits: 0,
+    onDutyCount: 0,
     pendingLeaves: 0
   });
 
   // Caregivers currently on duty
-  const [onDutyCaregivers, setOnDutyCaregivers] = useState([
-    { id: 'c1', name: 'Sarah Brown', code: 'EMP2002', client: 'John Doe', clockIn: '08:05 AM', location: 'Dublin 4' },
-    { id: 'c2', name: 'James Miller', code: 'EMP1045', client: 'Margaret O\'Connor', clockIn: '08:12 AM', location: 'Dublin 2' },
-    { id: 'c3', name: 'Emily Watson', code: 'EMP0912', client: 'Edward Kennedy', clockIn: '12:34 PM', location: 'Dublin 12' },
-    { id: 'c4', name: 'David Lee', code: 'EMP1108', client: 'Alice Jenkins', clockIn: '02:15 PM', location: 'Dublin 6' }
-  ]);
+  const [onDutyCaregivers, setOnDutyCaregivers] = useState([]);
+  const [onDutyLoading, setOnDutyLoading] = useState(true);
+  const [onDutyError, setOnDutyError] = useState('');
 
   // Leave Requests state
   const [leaveRequests, setLeaveRequests] = useState([]);
@@ -61,37 +191,58 @@ export default function AdminDashboard() {
   const [activeDrawer, setActiveDrawer] = useState(null); // 'schedule', 'client', 'caregiver' or null
   const [drawerSuccess, setDrawerSuccess] = useState('');
 
-  // Fetch real details from API if server is up
   useEffect(() => {
-    const fetchAdminStats = async () => {
+    const fetchOnDutyCaregivers = async () => {
       const token = authService.getToken();
-      if (!token) return;
+      if (!token) {
+        setOnDutyLoading(false);
+        return;
+      }
+
+      setOnDutyLoading(true);
+      setOnDutyError('');
 
       try {
-        // Fetch caregivers
-        const caregiversRes = await axios.get(`${API_URL}/api/caregivers`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        // Fetch clients
-        const clientsRes = await axios.get(`${API_URL}/api/clients`, {
-          headers: { Authorization: `Bearer ${token}` }
+        const response = await axios.get(`${API_URL}/api/visits/caregivers-with-shift-today`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
         });
 
-        if (caregiversRes.data && caregiversRes.data.success && clientsRes.data && clientsRes.data.success) {
-          const caregiverList = caregiversRes.data.body || [];
-          const activeCaregivers = caregiverList.filter(c => c.status === 'active');
-          const clientList = clientsRes.data.body || [];
-          
-          setStats(prev => ({
-            ...prev,
-            onDutyCount: activeCaregivers.length > 0 ? activeCaregivers.length : prev.onDutyCount
-          }));
+        if (!response.data?.success) {
+          throw new Error(response.data?.message || 'Failed to load caregivers on duty.');
         }
+
+        const caregiverData = response.data.data || response.data.body || [];
+        const normalized = caregiverData.map(normalizeOnDutyCaregiver);
+        const summary = response.data.summary || {};
+        const visitStats = calculateTodayVisitStats(normalized, summary);
+
+        setOnDutyCaregivers(normalized);
+        setStats((prev) => ({
+          ...prev,
+          ...visitStats,
+          onDutyCount: typeof summary.onDutyCount === 'number'
+            ? summary.onDutyCount
+            : normalized.filter((c) => c.onDuty).length
+        }));
       } catch (err) {
-        console.warn("Using local state metrics (backend server might be offline or empty).");
+        setOnDutyError(err.response?.data?.message || err.message || 'Failed to load caregivers on duty.');
+        setOnDutyCaregivers([]);
+        setStats((prev) => ({
+          ...prev,
+          totalVisits: 0,
+          completedVisits: 0,
+          pendingVisits: 0,
+          onDutyCount: 0
+        }));
+      } finally {
+        setOnDutyLoading(false);
       }
     };
-    fetchAdminStats();
+
+    fetchOnDutyCaregivers();
   }, []);
 
   useEffect(() => {
@@ -377,7 +528,8 @@ export default function AdminDashboard() {
         <div className="management-shortcuts-section">
           <h3 className="section-title-sub">Quick Administration Actions</h3>
           <div className="admin-shortcuts-grid">
-            <button className="shortcut-action-card card" onClick={() => openManagementDrawer('schedule')}>
+            {/* <button className="shortcut-action-card card" onClick={() => openManagementDrawer('schedule')}>*/}
+            <button className="shortcut-action-card card" onClick={() => { navigate('/admin/assign-schedule')} }>
               <div className="action-card-icon blue">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
@@ -389,7 +541,7 @@ export default function AdminDashboard() {
               </div>
             </button>
 
-            <button className="shortcut-action-card card" onClick={() => openManagementDrawer('client')}>
+            <button className="shortcut-action-card card" onClick={() => navigate('/admin/clients')}>
               <div className="action-card-icon green">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
@@ -433,31 +585,48 @@ export default function AdminDashboard() {
               }
             >
               <div className="table-responsive">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Caregiver</th>
-                      <th>Client Visit</th>
-                      <th>Clock-In</th>
-                      <th>Location</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {onDutyCaregivers.map((c) => (
-                      <tr key={c.id}>
-                        <td>
-                          <div className="td-caregiver-info">
-                            <strong>{c.name}</strong>
-                            <span>{c.code}</span>
-                          </div>
-                        </td>
-                        <td>{c.client}</td>
-                        <td><span className="badge badge-in">{c.clockIn}</span></td>
-                        <td>{c.location}</td>
+                {onDutyLoading ? (
+                  <p className="admin-section-helper">Loading caregivers on duty…</p>
+                ) : onDutyError ? (
+                  <p className="admin-section-helper text-danger">{onDutyError}</p>
+                ) : onDutyCaregivers.length === 0 ? (
+                  <p className="admin-section-helper">No caregivers scheduled for a shift today.</p>
+                ) : (
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Caregiver</th>
+                        <th>Visit Status</th>
+                        <th>Today's Shift</th>
+                        <th>Location</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {onDutyCaregivers.map((c) => (
+                        <tr key={c.id}>
+                          <td>
+                            <div className="td-caregiver-info">
+                              <strong>{c.name}</strong>
+                              <span>{c.code}</span>
+                            </div>
+                          </td>
+                          <td>
+                            <span className={`status-badge ${c.visitStatusClass}`}>
+                              {c.visitStatusLabel}
+                            </span>
+                          </td>
+                          <td>
+                            <div className="td-caregiver-info">
+                              <strong>{c.clientName}</strong>
+                              <span>{c.shiftWindow}</span>
+                            </div>
+                          </td>
+                          <td>{c.location}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
             </DashboardCard>
           </div>
@@ -565,22 +734,23 @@ export default function AdminDashboard() {
                 </p>
                 
                 {/* Simplified Mock Adding/Editing form to feel high-fidelity */}
-                {activeDrawer === 'schedule' && (
+                {/*{activeDrawer === 'schedule' && (
                   <div className="mock-drawer-form">
                     <div className="form-group">
                       <label className="form-label">Caregiver Employee Code</label>
-                      <input type="text" className="form-input" placeholder="e.g. EMP2002" />
+                      <input type="text" className="form-input" placeholder="e.g. EMP002" />
                     </div>
                     <div className="form-group">
                       <label className="form-label">Client Code</label>
-                      <input type="text" className="form-input" placeholder="e.g. CL001" />
+                      <input type="text" className="form-input" placeholder="e.g. CLT001" />
                     </div>
                     <div className="form-group">
-                      <label className="form-label">Shift Timing</label>
-                      <input type="text" className="form-input" placeholder="e.g. 09:00 AM - 12:00 PM" />
+                      <label className="form-label">Shift Timing</label>*/}
+                      {/*<input type="text" className="form-input" placeholder="e.g. 09:00 AM - 12:00 PM" />
+                      <input type="text" className="form-input" placeholder="e.g. 09:00 - 14:00 " />
                     </div>
                   </div>
-                )}
+                )} */}
 
                 {activeDrawer === 'client' && (
                   <div className="mock-drawer-form">

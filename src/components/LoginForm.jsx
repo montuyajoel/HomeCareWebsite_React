@@ -1,17 +1,36 @@
-// src/components/LoginForm.jsx
+{/* src/components/LoginForm.jsx
+This is a React component file that defines a reusable "login form" (LoginForm),
+which supports two roles (caregiver and admin).
+Main features: form validation, calling the login API, handling the "account not registered" case, showing a loading state,
+and providing navigation links to switch roles or register a new account. 
+
+This component uses one built-in Hook (useState) called 6 times, managing 6 pieces of data:
+fullName, employeeCode, errors, submitError, recoveryState, and isLoading.*/}
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { authService } from '../services/authService';
+{/*authServicewraps the actual login request logic. (calling the backend API and returning the result) */}
 
 export default function LoginForm({ role, onSuccess }) {
+  {/*hook call 1, useState manages the value of the "full name" input field, initialized to an empty string*/}
   const [fullName, setFullName] = useState('');
+ {/*hook call 2, useState manages the value of the "employee code" input field, initialized to an empty string*/}
   const [employeeCode, setEmployeeCode] = useState('');
+  {/*hook call 3, useState manages field-level validation errors(an object keyed by field names), initialized to an empty object*/}
   const [errors, setErrors] = useState({});
+  {/*hook call 4, useState manages the "submit error" state (for general errors), initialized to an empty string*/}
   const [submitError, setSubmitError] = useState('');
+  {/*hook call 5,useState manages the "account not registered" state, initialized to null*/}
   const [recoveryState, setRecoveryState] = useState(null);
+  {/*hook call 6, useState manages whether a request is submitting (used to disable the button, show a spinner), initialized to false*/}
   const [isLoading, setIsLoading] = useState(false);
 
+  {/*----------Form validation function--------------------
+  Check if the required fields are empty(after trimming whitespace)
+  and set error messages accordingly into one object.*/}
   const validateForm = () => {
+    {/*fullName/employeeCode read here are the state values stored by the Hooks above.*/}
     const newErrors = {};
     if (!fullName.trim()) {
       newErrors.fullName = 'Full Name is required.';
@@ -20,26 +39,27 @@ export default function LoginForm({ role, onSuccess }) {
       newErrors.employeeCode = 'Employee Code is required.';
     }
     setErrors(newErrors);
+    {/*Calling setErrors, the updater function returned by Hook #3, triggers a re-render.*/}
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitError('');
-    setRecoveryState(null);
+    setSubmitError('');{/*calling setSubmitError, the updater function returned by Hook #4, triggers a re-render.*/}
+    setRecoveryState(null); {/*calling setRecoveryState, the updater function returned by Hook #5, triggers a re-render.*/}
     
     if (!validateForm()) {
       return;
     }
 
-    setIsLoading(true);
+    setIsLoading(true);{/*calling setIsLoading, the updater function returned by Hook #6, enter loading state*/}
 
     try {
       const result = await authService.login(
         fullName,
         employeeCode,
         role
-      );
+      );  {/*// authService.login is an async function that calls the backend API and returns a result object with success status and data or error message.*/}
       if (result.success) {
         onSuccess(result);
       }
@@ -71,9 +91,13 @@ export default function LoginForm({ role, onSuccess }) {
     ? 'Register this caregiver profile to complete account setup, then return to sign in.'
     : 'Register this admin profile to complete account setup, then return to sign in.';
 
+    {/*reads hook 4's state value (submitError) to decide whether to render.
+    reads hook 5's state value (recoveryState) to decide whether to render.
+    */}
   return (
     <form className="login-form" onSubmit={handleSubmit} noValidate>
       {submitError && (
+        
         <div className="alert alert-danger" role="alert">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="12" cy="12" r="10" />
@@ -85,6 +109,7 @@ export default function LoginForm({ role, onSuccess }) {
       )}
 
       {recoveryState && (
+        
         <div className="auth-recovery-box" role="status" aria-live="polite">
           <div>
             <p className="auth-recovery-title">{recoveryState.message}</p>
@@ -150,12 +175,14 @@ export default function LoginForm({ role, onSuccess }) {
         )}
       </div>
 
+      {/**reads hook 6's state value (isLoading) to decide whether to disable the button. */}
       <button
         type="submit"
         className="btn btn-primary login-submit-btn"
         disabled={isLoading}
         style={{ width: '100%', marginTop: '1rem' }}
       >
+        {/*reads hook 6's state value (isLoading) again to switch the button content. */}
         {isLoading ? (
           <>
             <span className="spinner" aria-hidden="true"></span>

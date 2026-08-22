@@ -4,9 +4,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import AuthLayout from '../components/AuthLayout';
 import { authService } from '../services/authService';
 
-const DEFAULT_NAME = "";
-const DEFAULT_EMPLOYEE_CODE = '';
-const DEFAULT_EMAIL = '';
+const DEFAULT_NAME = "";//Sarah O'Connor
+const DEFAULT_EMPLOYEE_CODE = '';//ADM-001
+const DEFAULT_EMAIL = '';//sarah.oconnor_admin@homecare.ie
 const DEFAULT_OTP = '';
 
 function OtpModal({ code, setCode, isLoading, onSubmit, onClose }) {

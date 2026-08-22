@@ -4,8 +4,7 @@ import axios from 'axios';
 import Navbar from '../components/Navbar';
 import { authService } from '../services/authService';
 import '../styles/upcomingShifts.css';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+import { API_URL } from '../config/api';
 const HOUR_ROW_HEIGHT = 64;
 const HOURS = Array.from({ length: 24 }, (_, hour) => hour);
 
@@ -15,7 +14,7 @@ const toLocalDateKey = (date) => {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 };
 
-const createNext14Days = () => {
+const createNext2Weeks = () => {
   const start = new Date();
   start.setHours(0, 0, 0, 0);
 
@@ -49,7 +48,7 @@ export default function CaregiverUpcomingShifts() {
   const [error, setError] = useState('');
   const [selectedShift, setSelectedShift] = useState(null);
 
-  const days = useMemo(() => createNext14Days(), []);
+  const days = useMemo(() => createNext2Weeks(), []);
 
   useEffect(() => {
     const fetchFutureShifts = async () => {
@@ -64,7 +63,7 @@ export default function CaregiverUpcomingShifts() {
       setError('');
 
       try {
-        const response = await axios.get(`${API_URL}/api/visits/future-shifts`, {
+        const response = await axios.get(`${API_URL}/api/visit-logs/upcoming-shifts`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -124,7 +123,7 @@ export default function CaregiverUpcomingShifts() {
       <main className="main-content upcoming-shifts-page">
         <div className="upcoming-shifts-header">
           <div>
-            <h2>Upcoming Shifts (14 Days)</h2>
+            <h2>Upcoming Shifts (2 Weeks)</h2>
             <p>Days are shown as columns and hours as rows. Shift cards are placed in their assigned time slots.</p>
           </div>
           <button
@@ -198,7 +197,7 @@ export default function CaregiverUpcomingShifts() {
 
             {!calendarShifts.length && (
               <div className="upcoming-empty-note">
-                No upcoming shifts found in the next 14 days.
+                No upcoming shifts found in the next 2 weeks.
               </div>
             )}
           </div>

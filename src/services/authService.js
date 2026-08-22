@@ -1,7 +1,6 @@
 // src/services/authService.js
 import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+import { API_URL, getApiErrorMessage } from '../config/api';
 
 export const authService = {
   /**
@@ -41,8 +40,7 @@ export const authService = {
       }
     } catch (error) {
       console.error('API login failed:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Connection refused by the auth server.';
-      throw new Error(errorMessage);
+      throw new Error(getApiErrorMessage(error, 'Connection refused by the auth server.'));
     }
   },
 
@@ -76,8 +74,7 @@ export const authService = {
       throw new Error(response.data?.message || 'Failed to send verification code.');
     } catch (error) {
       console.error('API registration send-code failed:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Connection refused by the auth server.';
-      throw new Error(errorMessage);
+      throw new Error(getApiErrorMessage(error, 'Connection refused by the auth server.'));
     }
   },
 
@@ -106,8 +103,7 @@ export const authService = {
       throw new Error(response.data?.message || 'Failed to verify registration code.');
     } catch (error) {
       console.error('API registration verify failed:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Connection refused by the auth server.';
-      throw new Error(errorMessage);
+      throw new Error(getApiErrorMessage(error, 'Connection refused by the auth server.'));
     }
   },
 

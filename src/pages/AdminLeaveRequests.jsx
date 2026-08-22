@@ -4,8 +4,7 @@ import axios from 'axios';
 import Navbar from '../components/Navbar';
 import AffectedShiftsModal from '../components/AffectedShiftsModal';
 import { authService } from '../services/authService';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+import { API_URL } from '../config/api';
 
 const STATUS_OPTIONS = [
   { label: 'All', value: 'all' },
