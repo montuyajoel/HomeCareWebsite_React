@@ -2,6 +2,7 @@
 //Its purpose is to show the scheduled shifts that will be affected when an admin approves
 //or rejects a caregiver’s leave request.
 import React from 'react';
+import { Link } from 'react-router-dom';
 import '../styles/affectedShifts.css';
 
 const formatShiftDate = (value) => {
@@ -84,6 +85,15 @@ export default function AffectedShiftsModal({
                 <div className="affected-shift-schedule">
                   <strong>{formatShiftDate(shift.date)}</strong>
                   <span>{formatShiftTime(shift.startTime)} - {formatShiftTime(shift.endTime)}</span>
+                  {shift.client?.clientCode && (
+                    <Link
+                      to={`/admin/assign-schedule?clientCode=${encodeURIComponent(shift.client.clientCode)}`}
+                      className="affected-shift-reassign-link"
+                      style={{ display: 'block', marginTop: 6, fontSize: '0.85rem' }}
+                    >
+                      Reassign this shift →
+                    </Link>
+                  )}
                 </div>
               </div>
             ))}

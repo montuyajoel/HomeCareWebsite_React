@@ -9,18 +9,7 @@ import { clientService } from '../services/clientService';
 import '../styles/adminClientsDirectory.css';
 import '../styles/adminCaregiverDirectory.css';
 
-const STANDARD_CARE_NEEDS = [
-  'Personal Care',
-  'Meal Preparation',
-  'Medication Support',
-  'Mobility Assistance',
-  'Dementia Care',
-  'Wellbeing Check',
-  'Continence Support',
-  'Hoist Transfer',
-  'Two-Person Transfer',
-  'Pressure Area Monitoring'
-];
+import { STANDARD_CARE_SKILLS as STANDARD_CARE_NEEDS } from '../constants/careSkills';
 
 const CLIENT_STATUSES = ['active', 'inactive', 'deceased', 'other'];
 const MOBILITY_STATUSES = [
