@@ -13,6 +13,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import AdminCaregiversDirectory from './pages/AdminCaregiversDirectory';
 import AdminClientsDirectory from './pages/AdminClientsDirectory';
 import AssignSchedule from './pages/AssignSchedule';
+import AdminScheduleBoard from './pages/AdminScheduleBoard';
 import ProtectedRoute from './components/ProtectedRoute';
 import './styles/global.css';
 
@@ -76,13 +77,21 @@ function App() {
             </ProtectedRoute>
           }
         />
-        {/*scheduling form */}
         <Route
           path="/admin/assign-schedule"
           element={
-          <ProtectedRoute allowedRole="admin">
-            <AssignSchedule />
-          </ProtectedRoute>}
+            <ProtectedRoute allowedRole="admin">
+              <AssignSchedule />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/schedule"
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <AdminScheduleBoard />
+            </ProtectedRoute>
+          }
         />
 
 

@@ -9,16 +9,7 @@ import '../styles/adminCaregiverDirectory.css';
 import { CircleAlert, CircleCheck } from 'lucide-react';
 import { API_URL } from '../config/api';
 
-const STANDARD_SKILLS = [
-  'Personal Care',
-  'Dementia Care',
-  'Palliative Care',
-  'Meal Preparation',
-  'Mobility Support',
-  'Medication Support',
-  'CPR Certified',
-  'Elder Care'
-];
+import { STANDARD_CARE_SKILLS as STANDARD_SKILLS } from '../constants/careSkills';
 
 
 
