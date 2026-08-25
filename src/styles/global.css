@@ -1620,20 +1620,22 @@ select.form-input {
 
 .admin-shortcuts-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
 }
 
 .shortcut-action-card {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
+  gap: 1rem;
   background-color: #FFFFFF;
   text-align: left;
   cursor: pointer;
   border: 1px solid var(--color-border);
   transition: all var(--transition-fast);
-  padding: 1.25rem;
+  padding: 1.15rem 1.25rem;
+  width: 100%;
+  min-width: 0;
 }
 
 .shortcut-action-card:hover {
@@ -1642,16 +1644,30 @@ select.form-input {
   transform: translateY(-2px);
 }
 
+.shortcut-action-copy {
+  min-width: 0;
+  flex: 1;
+}
+
 .shortcut-action-card h4 {
   font-size: 0.95rem;
   font-weight: 600;
+  line-height: 1.25;
 }
 
 .shortcut-action-card p {
   font-size: 0.775rem;
   color: var(--color-text-muted);
-  margin-top: 0.125rem;
+  margin-top: 0.2rem;
+  line-height: 1.35;
 }
+
+@media (min-width: 1100px) {
+  .admin-shortcuts-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 
 .action-card-icon {
   width: 44px;
@@ -1695,32 +1711,64 @@ select.form-input {
   width: 100%;
   overflow-x: auto;
   margin-top: 0.5rem;
+  -webkit-overflow-scrolling: touch;
 }
 
 .admin-table {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
+  table-layout: fixed;
 }
 
 .admin-table th {
-  padding: 0.75rem 1rem;
+  padding: 0.75rem 0.85rem;
   border-bottom: 2px solid var(--color-border);
   font-size: 0.75rem;
   text-transform: uppercase;
   color: var(--color-text-muted);
   font-weight: 600;
+  vertical-align: bottom;
 }
 
 .admin-table td {
-  padding: 1rem;
+  padding: 0.9rem 0.85rem;
   border-bottom: 1px solid var(--color-border);
   font-size: 0.875rem;
+  vertical-align: top;
+  word-break: break-word;
+}
+
+.admin-table--on-duty th:nth-child(1),
+.admin-table--on-duty td:nth-child(1) {
+  width: 22%;
+}
+
+.admin-table--on-duty th:nth-child(2),
+.admin-table--on-duty td:nth-child(2) {
+  width: 18%;
+}
+
+.admin-table--on-duty th:nth-child(3),
+.admin-table--on-duty td:nth-child(3) {
+  width: 24%;
+}
+
+.admin-table--on-duty th:nth-child(4),
+.admin-table--on-duty td:nth-child(4) {
+  width: 36%;
+}
+
+.admin-table-location {
+  color: var(--color-text-muted);
+  line-height: 1.4;
 }
 
 .td-caregiver-info {
   display: flex;
   flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
 }
 
 .td-caregiver-info strong {
@@ -1841,6 +1889,7 @@ select.form-input {
 .leave-actions {
   display: flex;
   justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 0.5rem;
 }
 
@@ -2120,6 +2169,78 @@ select.form-input {
   gap: 1rem;
 }
 
+
+@media (max-width: 900px) {
+  .admin-table--on-duty thead {
+    display: none;
+  }
+
+  .admin-table--on-duty,
+  .admin-table--on-duty tbody,
+  .admin-table--on-duty tr,
+  .admin-table--on-duty td {
+    display: block;
+    width: 100%;
+  }
+
+  .admin-table--on-duty {
+    table-layout: auto;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .admin-table--on-duty tr {
+    background: var(--color-bg-base);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 0.85rem 1rem;
+    margin-bottom: 0.85rem;
+  }
+
+  .admin-table--on-duty td {
+    display: grid;
+    grid-template-columns: minmax(6.5rem, 34%) 1fr;
+    align-items: start;
+    gap: 0.75rem;
+    padding: 0.45rem 0;
+    border-bottom: none;
+  }
+
+  .admin-table--on-duty td:not(:last-child) {
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 0.65rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .admin-table--on-duty td::before {
+    content: attr(data-label);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    padding-top: 0.15rem;
+  }
+
+  .admin-table--on-duty .status-badge {
+    justify-self: start;
+  }
+
+  .leave-actions {
+    width: 100%;
+  }
+
+  .leave-actions .btn {
+    flex: 1 1 calc(50% - 0.25rem);
+    min-height: 42px;
+    justify-content: center;
+  }
+
+  .admin-section-toolbar .btn {
+    width: 100%;
+  }
+}
+
 /* Responsiveness Settings */
 @media (max-width: 1200px) {
   .summary-cards-grid {
@@ -2246,6 +2367,14 @@ select.form-input {
 
   .admin-shortcuts-grid {
     grid-template-columns: 1fr;
+  }
+
+  .shortcut-action-card {
+    align-items: flex-start;
+  }
+
+  .leave-actions .btn {
+    flex: 1 1 100%;
   }
 }
 

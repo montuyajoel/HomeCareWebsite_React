@@ -535,7 +535,7 @@ export default function AdminDashboard() {
                   <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
                 </svg>
               </div>
-              <div>
+              <div className="shortcut-action-copy">
                 <h4>Assign Schedule</h4>
                 <p>Pick a client, build multi-day slots, assign caregiver</p>
               </div>
@@ -550,7 +550,7 @@ export default function AdminDashboard() {
                   <line x1="3" y1="10" x2="21" y2="10" />
                 </svg>
               </div>
-              <div>
+              <div className="shortcut-action-copy">
                 <h4>Schedule Board</h4>
                 <p>View daily shifts, reassign or cancel assignments</p>
               </div>
@@ -563,7 +563,7 @@ export default function AdminDashboard() {
                   <circle cx="12" cy="7" r="4" />
                 </svg>
               </div>
-              <div>
+              <div className="shortcut-action-copy">
                 <h4>Client Records</h4>
                 <p>Register new clients, edit care plans and needs</p>
               </div>
@@ -578,7 +578,7 @@ export default function AdminDashboard() {
                   <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                 </svg>
               </div>
-              <div>
+              <div className="shortcut-action-copy">
                 <h4>Caregivers Directory</h4>
                 <p>Onboard staff, add skills, and set availability</p>
               </div>
@@ -607,7 +607,7 @@ export default function AdminDashboard() {
                 ) : onDutyCaregivers.length === 0 ? (
                   <p className="admin-section-helper">No caregivers scheduled for a shift today.</p>
                 ) : (
-                  <table className="admin-table">
+                  <table className="admin-table admin-table--on-duty">
                     <thead>
                       <tr>
                         <th>Caregiver</th>
@@ -619,24 +619,26 @@ export default function AdminDashboard() {
                     <tbody>
                       {onDutyCaregivers.map((c) => (
                         <tr key={c.id}>
-                          <td>
+                          <td data-label="Caregiver">
                             <div className="td-caregiver-info">
                               <strong>{c.name}</strong>
                               <span>{c.code}</span>
                             </div>
                           </td>
-                          <td>
+                          <td data-label="Visit Status">
                             <span className={`status-badge ${c.visitStatusClass}`}>
                               {c.visitStatusLabel}
                             </span>
                           </td>
-                          <td>
+                          <td data-label="Today's Shift">
                             <div className="td-caregiver-info">
                               <strong>{c.clientName}</strong>
                               <span>{c.shiftWindow}</span>
                             </div>
                           </td>
-                          <td>{c.location}</td>
+                          <td data-label="Location" className="admin-table-location">
+                            {c.location}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
