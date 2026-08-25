@@ -180,7 +180,6 @@ export default function LoginForm({ role, onSuccess }) {
         type="submit"
         className="btn btn-primary login-submit-btn"
         disabled={isLoading}
-        style={{ width: '100%', marginTop: '1rem' }}
       >
         {/*reads hook 6's state value (isLoading) again to switch the button content. */}
         {isLoading ? (

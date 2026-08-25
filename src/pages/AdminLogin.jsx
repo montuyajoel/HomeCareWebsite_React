@@ -17,7 +17,7 @@ export default function AdminLogin() {
   return (
     <AuthLayout
       title="Admin Login"
-      subtitle="Sign in to coordinate schedules, manage clients, review leaf requests, and monitor caregivers."
+      subtitle="Sign in to coordinate schedules, manage clients, review leave requests, and monitor caregivers."
     >
       {registrationMessage && (
         <div className="alert alert-success" role="status" aria-live="polite">
