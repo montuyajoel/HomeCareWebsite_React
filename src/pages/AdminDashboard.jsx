@@ -636,8 +636,8 @@ export default function AdminDashboard() {
                               <span>{c.shiftWindow}</span>
                             </div>
                           </td>
-                          <td data-label="Location" className="admin-table-location">
-                            {c.location}
+                          <td data-label="Location">
+                            <span className="admin-table-location">{c.location}</span>
                           </td>
                         </tr>
                       ))}
