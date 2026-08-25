@@ -105,7 +105,7 @@
 .scheduling-field textarea:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.15);
 }
 
 .client-search-list {
@@ -271,28 +271,30 @@
 }
 
 .scheduling-alert {
-  padding: 12px 14px;
-  border-radius: var(--radius-sm);
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-md);
   margin-top: 16px;
   font-size: 0.9rem;
+  background: #FFFFFF;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--color-border);
+  border-left-width: 4px;
+  line-height: 1.5;
 }
 
 .scheduling-alert.success {
-  background: var(--color-success-bg);
   color: #065f46;
-  border: 1px solid #a7f3d0;
+  border-left-color: var(--color-success);
 }
 
 .scheduling-alert.error {
-  background: var(--color-error-bg);
   color: #991b1b;
-  border: 1px solid #fecaca;
+  border-left-color: var(--color-error);
 }
 
 .scheduling-alert.info {
-  background: var(--color-primary-light);
-  color: #1e40af;
-  border: 1px solid #bfdbfe;
+  color: #134E4A;
+  border-left-color: var(--color-primary);
 }
 
 .day-schedule-preview {

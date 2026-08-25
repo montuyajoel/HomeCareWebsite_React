@@ -115,9 +115,9 @@
   z-index: 4;
   margin: 2px;
   border-radius: 10px;
-  border: 1px solid #93C5FD;
-  background: linear-gradient(180deg, #EFF6FF 0%, #DBEAFE 100%);
-  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.12);
+  border: 1px solid #5EEAD4;
+  background: linear-gradient(180deg, #F0FDFA 0%, #CCFBF1 100%);
+  box-shadow: 0 1px 4px rgba(15, 118, 110, 0.12);
   padding: 0.4rem 0.45rem;
   overflow: hidden;
   display: flex;
@@ -130,14 +130,14 @@
 }
 
 .calendar-shift-card:hover {
-  border-color: #60A5FA;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+  border-color: #2DD4BF;
+  box-shadow: 0 2px 8px rgba(15, 118, 110, 0.2);
 }
 
 .calendar-shift-time {
   font-size: 0.7rem;
   font-weight: 700;
-  color: #1D4ED8;
+  color: #115E59;
 }
 
 .calendar-shift-client {
