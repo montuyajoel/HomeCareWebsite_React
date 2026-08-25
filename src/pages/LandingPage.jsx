@@ -71,18 +71,18 @@ export default function LandingPage() {
             <svg viewBox="0 0 500 500" className="hero-svg" aria-hidden="true" width="100%" height="auto">
               <defs>
                 <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#DBEAFE" />
-                  <stop offset="100%" stopColor="#EFF6FF" />
+                  <stop offset="0%" stopColor="#CCFBF1" />
+                  <stop offset="100%" stopColor="#F0FDFA" />
                 </linearGradient>
                 <linearGradient id="mainBlue" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor="#60A5FA" />
-                  <stop offset="100%" stopColor="#2563EB" />
+                  <stop offset="0%" stopColor="#2DD4BF" />
+                  <stop offset="100%" stopColor="#0F766E" />
                 </linearGradient>
               </defs>
               
               {/* Background Circle Grid */}
               <circle cx="250" cy="250" r="220" fill="url(#blueGrad)" />
-              <circle cx="250" cy="250" r="180" fill="none" stroke="#93C5FD" strokeWidth="1" strokeDasharray="5 5" />
+              <circle cx="250" cy="250" r="180" fill="none" stroke="#5EEAD4" strokeWidth="1" strokeDasharray="5 5" />
               
               {/* SVG Calendar Illustration */}
               <g transform="translate(110, 100)">
@@ -103,13 +103,13 @@ export default function LandingPage() {
                 {/* List items inside calendar */}
                 {/* Shift 1 */}
                 <g transform="translate(20, 80)">
-                  <rect x="0" y="0" width="240" height="65" rx="10" fill="#F0F6FF" stroke="#BFDBFE" strokeWidth="1" />
-                  <circle cx="25" cy="32" r="12" fill="#3B82F6" />
+                  <rect x="0" y="0" width="240" height="65" rx="10" fill="#F0FDFA" stroke="#99F6E4" strokeWidth="1" />
+                  <circle cx="25" cy="32" r="12" fill="#0F766E" />
                   {/* Heart Icon on Circle */}
                   <path d="M25 28.5s-2.5 1.5-2.5 3.5 1.5 2.5 2.5 2.5 2.5-.5 2.5-2.5-2.5-3.5-2.5-3.5z" fill="#FFFFFF" />
                   <text x="50" y="30" fill="#1E293B" fontSize="12" fontWeight="600">Client: John Doe</text>
                   <text x="50" y="46" fill="#64748B" fontSize="10">08:00 AM - 10:00 AM</text>
-                  <rect x="180" y="20" width="50" height="22" rx="11" fill="#3B82F6" />
+                  <rect x="180" y="20" width="50" height="22" rx="11" fill="#0F766E" />
                   <text x="205" y="34" fill="#FFFFFF" fontSize="9" fontWeight="600" textAnchor="middle">Active</text>
                 </g>
 

@@ -5,15 +5,16 @@
 :root {
   --color-bg-base: #F8FAFC;
   /* Clean slate white/light-grey */
-  --color-bg-light-blue: #F0F6FF;
-  /* Very light blue backdrop */
+  --color-bg-light-blue: #F0FDFA;
+  /* Soft teal tint backdrop */
   --color-bg-card: #FFFFFF;
-  --color-primary: #3B82F6;
-  /* Soft blue primary */
-  --color-primary-hover: #2563EB;
-  /* Rich blue for hover states */
-  --color-primary-light: #EBF5FF;
-  /* Very light blue tint */
+  --color-primary: #0F766E;
+  /* Teal-green primary */
+  --color-primary-hover: #0D9488;
+  /* Brighter teal for hover states */
+  --color-primary-light: #CCFBF1;
+  /* Very light teal tint */
+  --color-primary-rgb: 15, 118, 110;
   --color-text-main: #1E293B;
   /* Slate 800 */
   --color-text-muted: #64748B;
@@ -22,8 +23,8 @@
   /* Slate 200 */
   --color-border-hover: #CBD5E1;
   /* Slate 300 */
-  --color-border-focus: #93C5FD;
-  /* Blue 300 */
+  --color-border-focus: #5EEAD4;
+  /* Teal 300 */
   --color-error: #EF4444;
   /* Red 50 */
   --color-error-bg: #FEF2F2;
@@ -164,7 +165,7 @@ select.form-input {
 
 .form-input:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.15);
 }
 
 .form-input.is-invalid {
@@ -206,19 +207,19 @@ select.form-input {
 }
 
 .btn-primary:disabled {
-  background-color: #93C5FD;
+  background-color: #5EEAD4;
   cursor: not-allowed;
   opacity: 0.8;
 }
 
 .btn-secondary {
   background-color: var(--color-primary-light);
-  color: var(--color-primary-hover);
+  color: var(--color-primary);
   border-color: transparent;
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background-color: #DBEAFE;
+  background-color: #99F6E4;
 }
 
 .btn-outline {
@@ -274,27 +275,40 @@ select.form-input {
   box-shadow: var(--shadow-md);
 }
 
-/* Alert styles */
+/* Alert styles — card mode */
 .alert {
-  padding: 0.75rem 1rem;
-  border-radius: var(--radius-sm);
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-md);
   font-size: 0.875rem;
   margin-bottom: 1.25rem;
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background-color: #FFFFFF;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--color-border);
+  border-left-width: 4px;
+  line-height: 1.5;
 }
 
 .alert-danger {
-  background-color: var(--color-error-bg);
-  border: 1px solid #FCA5A5;
+  border-left-color: var(--color-error);
   color: #991B1B;
 }
 
 .alert-success {
-  background-color: var(--color-success-bg);
-  border: 1px solid #6EE7B7;
+  border-left-color: var(--color-success);
   color: #065F46;
+}
+
+.alert-warning {
+  border-left-color: var(--color-warning);
+  color: #92400E;
+}
+
+.alert-info {
+  border-left-color: var(--color-primary);
+  color: #134E4A;
 }
 
 /* Spinner helper */
@@ -445,7 +459,7 @@ select.form-input {
   font-size: 0.75rem;
   font-weight: 600;
   align-self: flex-start;
-  border: 1px solid rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(var(--color-primary-rgb), 0.15);
 }
 
 .badge-dot {
@@ -472,17 +486,17 @@ select.form-input {
 @keyframes pulse {
   0% {
     transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+    box-shadow: 0 0 0 0 rgba(var(--color-primary-rgb), 0.7);
   }
 
   70% {
     transform: scale(1);
-    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0);
+    box-shadow: 0 0 0 4px rgba(var(--color-primary-rgb), 0);
   }
 
   100% {
     transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+    box-shadow: 0 0 0 0 rgba(var(--color-primary-rgb), 0);
   }
 }
 
@@ -831,9 +845,9 @@ select.form-input {
 
 .status-badge.clocked-in,
 .status-badge.in-progress {
-  background-color: #DBEAFE;
-  color: #1D4ED8;
-  border-color: #BFDBFE;
+  background-color: #CCFBF1;
+  color: #115E59;
+  border-color: #99F6E4;
 }
 
 .status-badge.completed {
@@ -888,8 +902,8 @@ select.form-input {
   margin-top: 1rem;
   padding: 0.95rem 1rem;
   border-radius: 14px;
-  border: 1px solid #BFDBFE;
-  background: linear-gradient(180deg, #EFF6FF 0%, #FFFFFF 100%);
+  border: 1px solid #99F6E4;
+  background: linear-gradient(180deg, #F0FDFA 0%, #FFFFFF 100%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
@@ -903,7 +917,7 @@ select.form-input {
 .shift-notice-title-wrap strong {
   display: block;
   font-size: 0.9rem;
-  color: #1D4ED8;
+  color: #115E59;
   margin-bottom: 0.15rem;
 }
 
@@ -1073,24 +1087,24 @@ select.form-input {
   height: 12px;
   border-radius: 50%;
   background-color: var(--color-primary);
-  box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+  box-shadow: 0 0 0 0 rgba(var(--color-primary-rgb), 0.7);
   animation: pulse-active 1.5s infinite;
 }
 
 @keyframes pulse-active {
   0% {
     transform: scale(0.9);
-    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+    box-shadow: 0 0 0 0 rgba(var(--color-primary-rgb), 0.7);
   }
 
   70% {
     transform: scale(1.1);
-    box-shadow: 0 0 0 8px rgba(59, 130, 246, 0);
+    box-shadow: 0 0 0 8px rgba(var(--color-primary-rgb), 0);
   }
 
   100% {
     transform: scale(0.9);
-    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+    box-shadow: 0 0 0 0 rgba(var(--color-primary-rgb), 0);
   }
 }
 
@@ -1136,7 +1150,7 @@ select.form-input {
 }
 
 .shortcut-button-card:hover .shortcut-icon-container {
-  background-color: #DBEAFE;
+  background-color: #99F6E4;
 }
 
 /* Modals & Dialogs */
@@ -1245,8 +1259,8 @@ select.form-input {
 }
 
 .metric-icon-box.blue-tint {
-  background-color: #E0F2FE;
-  color: #0284C7;
+  background-color: #CCFBF1;
+  color: #0F766E;
 }
 
 .metric-icon-box.red-tint {
@@ -1947,5 +1961,145 @@ select.form-input {
   .shift-actions {
     justify-content: flex-end;
     gap: 0.4rem;
+  }
+}
+/* Shared notification / confirmation cards */
+.admin-notification-overlay {
+  z-index: 1500;
+}
+
+.admin-notification-card {
+  width: min(460px, calc(100% - 2rem));
+  padding: 1.5rem;
+  background: #FFFFFF;
+  border: 1px solid var(--color-border);
+  border-left-width: 4px;
+  box-shadow: var(--shadow-lg);
+}
+
+.admin-notification-card--success {
+  border-left-color: var(--color-success);
+}
+
+.admin-notification-card--warning {
+  border-left-color: var(--color-warning);
+}
+
+.admin-notification-card--danger,
+.admin-notification-card--error {
+  border-left-color: var(--color-error);
+}
+
+.admin-notification-card--info {
+  border-left-color: var(--color-primary);
+}
+
+.admin-notification-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.admin-notification-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #F8FAFC;
+}
+
+.admin-notification-icon {
+  flex-shrink: 0;
+}
+
+.admin-notification-icon--success {
+  color: #16A34A;
+}
+
+.admin-notification-icon--warning {
+  color: #D97706;
+}
+
+.admin-notification-icon--danger,
+.admin-notification-icon--error {
+  color: #DC2626;
+}
+
+.admin-notification-icon--info {
+  color: var(--color-primary);
+}
+
+.admin-notification-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-notification-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.admin-notification-title {
+  margin: 0 0 0.5rem;
+  color: var(--color-text-main);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.admin-notification-message {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.admin-notification-close {
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.admin-notification-close:hover {
+  color: var(--color-text-main);
+}
+
+.admin-notification-actions {
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+@media (max-width: 520px) {
+  .admin-notification-actions {
+    flex-direction: column-reverse;
+  }
+
+  .admin-notification-actions .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-notification-card {
+    padding: 1.25rem;
+  }
+
+  .admin-notification-content {
+    gap: 0.75rem;
+  }
+
+  .admin-notification-icon-wrapper {
+    width: 38px;
+    height: 38px;
   }
 }

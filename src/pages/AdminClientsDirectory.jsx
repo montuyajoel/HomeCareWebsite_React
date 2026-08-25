@@ -1,9 +1,9 @@
 // src/pages/AdminClientsDirectory.jsx
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CircleAlert, CircleCheck } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import CarePlanPdfModal from '../components/CarePlanPdfModal';
+import NotificationCard from '../components/NotificationCard';
 import { authService } from '../services/authService';
 import { clientService } from '../services/clientService';
 import '../styles/adminClientsDirectory.css';
@@ -153,26 +153,6 @@ export default function AdminClientsDirectory() {
   const carePlanFileInputRef = useRef(null);
 
   const [notificationCard, setNotificationCard] = useState(null);
-
-  const renderNotificationIcon = () => {
-    if (notificationCard?.type === 'success') {
-      return (
-        <CircleCheck
-          size={28}
-          strokeWidth={2.25}
-          className="admin-notification-icon admin-notification-icon--success"
-        />
-      );
-    }
-
-    return (
-      <CircleAlert
-        size={28}
-        strokeWidth={2.25}
-        className={`admin-notification-icon admin-notification-icon--${notificationCard?.type || 'info'}`}
-      />
-    );
-  };
 
   const showNotificationCard = ({
     type = 'info',
@@ -1887,64 +1867,15 @@ export default function AdminClientsDirectory() {
       )}
 
       {notificationCard && (
-        <div
-          className="modal-overlay admin-notification-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="client-notification-title"
-        >
-          <div className="card admin-notification-card">
-            <div className="admin-notification-content">
-              <div className="admin-notification-icon-wrapper">
-                {renderNotificationIcon()}
-              </div>
-              <div className="admin-notification-body">
-                <div className="admin-notification-header">
-                  <div>
-                    <h3 id="client-notification-title" className="admin-notification-title">
-                      {notificationCard.title}
-                    </h3>
-                    <p className="admin-notification-message">{notificationCard.message}</p>
-                  </div>
-                  {!notificationCard.onConfirm && (
-                    <button
-                      type="button"
-                      onClick={closeNotificationCard}
-                      aria-label="Close notification"
-                      className="admin-notification-close"
-                    >
-                      &times;
-                    </button>
-                  )}
-                </div>
-                <div className="modal-actions admin-notification-actions">
-                  {notificationCard.onConfirm ? (
-                    <>
-                      <button
-                        type="button"
-                        className="btn btn-outline"
-                        onClick={closeNotificationCard}
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-danger"
-                        onClick={handleNotificationConfirm}
-                      >
-                        {notificationCard.confirmLabel || 'Confirm'}
-                      </button>
-                    </>
-                  ) : (
-                    <button type="button" className="btn btn-primary" onClick={closeNotificationCard}>
-                      Close
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <NotificationCard
+          type={notificationCard.type}
+          title={notificationCard.title}
+          message={notificationCard.message}
+          confirmLabel={notificationCard.confirmLabel}
+          onConfirm={notificationCard.onConfirm ? handleNotificationConfirm : null}
+          onClose={closeNotificationCard}
+          titleId="client-notification-title"
+        />
       )}
     </div>
   );

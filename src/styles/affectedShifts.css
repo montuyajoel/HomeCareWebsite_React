@@ -1,7 +1,6 @@
 /* Affected Shifts Confirmation Modal */
 .alert-warning {
-  background-color: #FFFBEB;
-  border: 1px solid #FCD34D;
+  border-left-color: var(--color-warning);
   color: #92400E;
 }
 
