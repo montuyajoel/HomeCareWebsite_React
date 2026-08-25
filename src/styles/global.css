@@ -1736,7 +1736,7 @@ select.form-input {
   border-bottom: 1px solid var(--color-border);
   font-size: 0.875rem;
   vertical-align: top;
-  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .admin-table--on-duty th:nth-child(1),
@@ -2176,9 +2176,7 @@ select.form-input {
   }
 
   .admin-table--on-duty,
-  .admin-table--on-duty tbody,
-  .admin-table--on-duty tr,
-  .admin-table--on-duty td {
+  .admin-table--on-duty tbody {
     display: block;
     width: 100%;
   }
@@ -2190,40 +2188,79 @@ select.form-input {
   }
 
   .admin-table--on-duty tr {
+    display: block;
+    width: 100%;
     background: var(--color-bg-base);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     padding: 0.85rem 1rem;
     margin-bottom: 0.85rem;
+    box-sizing: border-box;
+  }
+
+  .admin-table--on-duty th:nth-child(1),
+  .admin-table--on-duty td:nth-child(1),
+  .admin-table--on-duty th:nth-child(2),
+  .admin-table--on-duty td:nth-child(2),
+  .admin-table--on-duty th:nth-child(3),
+  .admin-table--on-duty td:nth-child(3),
+  .admin-table--on-duty th:nth-child(4),
+  .admin-table--on-duty td:nth-child(4) {
+    width: 100%;
   }
 
   .admin-table--on-duty td {
-    display: grid;
-    grid-template-columns: minmax(6.5rem, 34%) 1fr;
-    align-items: start;
-    gap: 0.75rem;
-    padding: 0.45rem 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 0.55rem 0;
     border-bottom: none;
+    word-break: normal;
+    overflow-wrap: break-word;
   }
 
   .admin-table--on-duty td:not(:last-child) {
     border-bottom: 1px solid var(--color-border);
-    padding-bottom: 0.65rem;
-    margin-bottom: 0.35rem;
+    padding-bottom: 0.7rem;
+    margin-bottom: 0.25rem;
   }
 
   .admin-table--on-duty td::before {
     content: attr(data-label);
+    flex: 0 0 7.25rem;
+    max-width: 7.25rem;
     font-size: 0.7rem;
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
     color: var(--color-text-muted);
-    padding-top: 0.15rem;
+    padding-top: 0.2rem;
+  }
+
+  .admin-table--on-duty td > * {
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align: right;
+  }
+
+  .admin-table--on-duty .td-caregiver-info {
+    align-items: flex-end;
+  }
+
+  .admin-table--on-duty .admin-table-location {
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align: right;
+    white-space: normal;
   }
 
   .admin-table--on-duty .status-badge {
-    justify-self: start;
+    flex: 0 0 auto;
+    white-space: nowrap;
   }
 
   .leave-actions {
