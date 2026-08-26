@@ -5,8 +5,8 @@ export const API_URL =
   (import.meta.env.PROD ? PRODUCTION_API_URL : 'http://localhost:5001');
 
 /**
- * Uhie chatbot endpoint (Azure OpenAI / Foundry agent later).
- * Leave empty to use the local stub reply in uhieChatService.
+ * Optional override for the Uhie chat endpoint.
+ * Default: `${API_URL}/api/chat` (see uhieChatService).
  */
 export const UHIE_CHAT_URL = import.meta.env.VITE_UHIE_CHAT_URL || '';
 

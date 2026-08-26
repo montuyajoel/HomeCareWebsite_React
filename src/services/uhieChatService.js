@@ -1,9 +1,14 @@
 import axios from 'axios';
-import { UHIE_CHAT_URL, getApiErrorMessage } from '../config/api';
+import { API_URL, UHIE_CHAT_URL, getApiErrorMessage } from '../config/api';
 import { authService } from './authService';
 
-const STUB_REPLY =
-  "Hi, I'm Uhie. My Azure / Foundry connection isn't configured yet. Set VITE_UHIE_CHAT_URL when your agent endpoint is ready—I can help with HR questions, care inquiries, and finding carers for a schedule.";
+/**
+ * Prefer dedicated Uhie URL, otherwise the shared API host `/api/chat` backend route.
+ */
+function getChatEndpoint() {
+  if (UHIE_CHAT_URL) return UHIE_CHAT_URL;
+  return `${API_URL}/api/chat`;
+}
 
 /**
  * Build the identity payload to send with every Uhie chat request.
@@ -20,14 +25,12 @@ function getUserContext() {
 }
 
 /**
- * Send a chat message to the Uhie backend (Foundry / Azure OpenAI later).
- * When UHIE_CHAT_URL is empty, returns a local stub so the UI stays usable.
+ * Send a chat message to the Uhie backend (Azure Foundry via Express).
  *
- * Expected remote contract (adjust later to match Foundry):
- * POST {UHIE_CHAT_URL}
+ * POST /api/chat
  * Authorization: Bearer <user JWT>
  * Body: { message, history, user }
- * Response: { reply: string } or { message: string }
+ * Response: { reply } or { response }
  */
 export async function sendUhieMessage({ message, history = [] }) {
   const trimmed = (message || '').trim();
@@ -40,15 +43,8 @@ export async function sendUhieMessage({ message, history = [] }) {
     throw new Error('Sign in to chat with Uhie.');
   }
 
-  if (!UHIE_CHAT_URL) {
-    await new Promise((resolve) => setTimeout(resolve, 350));
-    return {
-      reply: STUB_REPLY,
-      stub: true
-    };
-  }
-
   const token = authService.getToken();
+  const endpoint = getChatEndpoint();
   const payload = {
     message: trimmed,
     history,
@@ -56,7 +52,7 @@ export async function sendUhieMessage({ message, history = [] }) {
   };
 
   try {
-    const response = await axios.post(UHIE_CHAT_URL, payload, {
+    const response = await axios.post(endpoint, payload, {
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -67,6 +63,7 @@ export async function sendUhieMessage({ message, history = [] }) {
     const data = response.data || {};
     const reply =
       data.reply ||
+      data.response ||
       data.message ||
       data.answer ||
       data.output ||
@@ -78,11 +75,15 @@ export async function sendUhieMessage({ message, history = [] }) {
 
     return { reply: String(reply), stub: false };
   } catch (error) {
-    throw new Error(getApiErrorMessage(error, 'Uhie could not respond right now.'));
+    const serverMessage = error?.response?.data?.error;
+    throw new Error(
+      serverMessage || getApiErrorMessage(error, 'Uhie could not respond right now.')
+    );
   }
 }
 
 export const uhieChatService = {
   sendMessage: sendUhieMessage,
-  isConfigured: () => Boolean(UHIE_CHAT_URL)
+  isConfigured: () => true,
+  getEndpoint: getChatEndpoint
 };

@@ -118,7 +118,7 @@ export default function UhieChatWidget() {
                 {user?.fullName
                   ? `Chatting as ${user.fullName}${user.role ? ` (${user.role})` : ''}`
                   : 'Signed in'}
-                {!uhieChatService.isConfigured() ? ' · stub mode' : ''}
+                {!uhieChatService.isConfigured() ? ' · offline' : ''}
               </p>
             </div>
             <button
