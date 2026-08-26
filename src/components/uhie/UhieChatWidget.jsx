@@ -9,6 +9,18 @@ const WELCOME =
 
 const WELCOME_MESSAGE = { id: 'welcome', role: 'assistant', text: WELCOME };
 
+const PUBLIC_ROUTES = new Set([
+  '/',
+  '/admin/login',
+  '/admin/register',
+  '/caregiver/login',
+  '/caregiver/register'
+]);
+
+function isPublicRoute(pathname) {
+  return PUBLIC_ROUTES.has(pathname);
+}
+
 function createId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -54,10 +66,10 @@ export default function UhieChatWidget() {
   }, [resetChat]);
 
   useEffect(() => {
-    if (!isAuthed) {
+    if (!isAuthed || isPublicRoute(location.pathname)) {
       resetChat();
     }
-  }, [isAuthed, resetChat]);
+  }, [isAuthed, location.pathname, resetChat]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -68,7 +80,7 @@ export default function UhieChatWidget() {
     inputRef.current?.focus();
   }, [isOpen, messages, isSending]);
 
-  if (!isAuthed) {
+  if (!isAuthed || isPublicRoute(location.pathname)) {
     return null;
   }
 
