@@ -6,7 +6,7 @@ export const API_URL =
 
 /**
  * Optional override for the Uhie chat endpoint.
- * Default: `${API_URL}/api/chat` (see uhieChatService).
+ * Default: `${API_URL}/api/uhie/chat` (HomeCare backend).
  */
 export const UHIE_CHAT_URL = import.meta.env.VITE_UHIE_CHAT_URL || '';
 

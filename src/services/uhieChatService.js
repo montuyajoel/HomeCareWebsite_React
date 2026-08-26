@@ -3,11 +3,11 @@ import { API_URL, UHIE_CHAT_URL, getApiErrorMessage } from '../config/api';
 import { authService } from './authService';
 
 /**
- * Prefer dedicated Uhie URL, otherwise the shared API host `/api/chat` backend route.
+ * Prefer dedicated Uhie URL, otherwise the HomeCare API `/api/uhie/chat` route.
  */
 function getChatEndpoint() {
   if (UHIE_CHAT_URL) return UHIE_CHAT_URL;
-  return `${API_URL}/api/chat`;
+  return `${API_URL}/api/uhie/chat`;
 }
 
 /**
@@ -25,12 +25,12 @@ function getUserContext() {
 }
 
 /**
- * Send a chat message to the Uhie backend (Azure Foundry via Express).
+ * Send a chat message to the HomeCare backend Uhie route (Foundry stays server-side).
  *
- * POST /api/chat
+ * POST /api/uhie/chat
  * Authorization: Bearer <user JWT>
  * Body: { message, history, user }
- * Response: { reply } or { response }
+ * Response: { reply } or { response } or { message }
  */
 export async function sendUhieMessage({ message, history = [] }) {
   const trimmed = (message || '').trim();
@@ -75,7 +75,8 @@ export async function sendUhieMessage({ message, history = [] }) {
 
     return { reply: String(reply), stub: false };
   } catch (error) {
-    const serverMessage = error?.response?.data?.error;
+    const serverMessage =
+      error?.response?.data?.message || error?.response?.data?.error;
     throw new Error(
       serverMessage || getApiErrorMessage(error, 'Uhie could not respond right now.')
     );
