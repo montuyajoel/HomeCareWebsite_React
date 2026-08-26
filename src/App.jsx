@@ -15,6 +15,7 @@ import AdminClientsDirectory from './pages/AdminClientsDirectory';
 import AssignSchedule from './pages/AssignSchedule';
 import AdminScheduleBoard from './pages/AdminScheduleBoard';
 import ProtectedRoute from './components/ProtectedRoute';
+import UhieChatWidget from './components/uhie/UhieChatWidget';
 import './styles/global.css';
 
 function App() {
@@ -99,6 +100,7 @@ function App() {
         {/* Default Wildcard Catch-all */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <UhieChatWidget />
     </Router>
   );
 }
