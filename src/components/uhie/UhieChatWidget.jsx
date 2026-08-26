@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { authService } from '../../services/authService';
 import { uhieChatService } from '../../services/uhieChatService';
@@ -6,6 +6,20 @@ import '../../styles/uhieChat.css';
 
 const WELCOME =
   "Hi, I'm Uhie—your United Healthcare IE assistant. Ask about HR, care questions, or finding a carer for a time slot.";
+
+const WELCOME_MESSAGE = { id: 'welcome', role: 'assistant', text: WELCOME };
+
+const PUBLIC_ROUTES = new Set([
+  '/',
+  '/admin/login',
+  '/admin/register',
+  '/caregiver/login',
+  '/caregiver/register'
+]);
+
+function isPublicRoute(pathname) {
+  return PUBLIC_ROUTES.has(pathname);
+}
 
 function createId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -16,12 +30,17 @@ export default function UhieChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [draft, setDraft] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [messages, setMessages] = useState([
-    { id: 'welcome', role: 'assistant', text: WELCOME }
-  ]);
+  const [messages, setMessages] = useState([WELCOME_MESSAGE]);
   const [isAuthed, setIsAuthed] = useState(() => authService.isAuthenticated());
   const listRef = useRef(null);
   const inputRef = useRef(null);
+
+  const resetChat = useCallback(() => {
+    setIsOpen(false);
+    setDraft('');
+    setIsSending(false);
+    setMessages([WELCOME_MESSAGE]);
+  }, []);
 
   useEffect(() => {
     setIsAuthed(authService.isAuthenticated());
@@ -38,10 +57,19 @@ export default function UhieChatWidget() {
   }, []);
 
   useEffect(() => {
-    if (!isAuthed && isOpen) {
-      setIsOpen(false);
+    const onLogout = () => {
+      resetChat();
+      setIsAuthed(false);
+    };
+    window.addEventListener('auth:logout', onLogout);
+    return () => window.removeEventListener('auth:logout', onLogout);
+  }, [resetChat]);
+
+  useEffect(() => {
+    if (!isAuthed || isPublicRoute(location.pathname)) {
+      resetChat();
     }
-  }, [isAuthed, isOpen]);
+  }, [isAuthed, location.pathname, resetChat]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -52,7 +80,7 @@ export default function UhieChatWidget() {
     inputRef.current?.focus();
   }, [isOpen, messages, isSending]);
 
-  if (!isAuthed) {
+  if (!isAuthed || isPublicRoute(location.pathname)) {
     return null;
   }
 

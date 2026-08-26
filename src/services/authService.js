@@ -113,6 +113,7 @@ export const authService = {
   logout: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    window.dispatchEvent(new CustomEvent('auth:logout'));
   },
 
   /**
