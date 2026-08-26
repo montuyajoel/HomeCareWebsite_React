@@ -83,7 +83,12 @@ export default function UhieChatWidget() {
       });
       setMessages((prev) => [
         ...prev,
-        { id: createId(), role: 'assistant', text: result.reply }
+        {
+          id: createId(),
+          role: 'assistant',
+          text: result.reply,
+          references: result.references || []
+        }
       ]);
     } catch (error) {
       setMessages((prev) => [
@@ -137,7 +142,19 @@ export default function UhieChatWidget() {
                 key={message.id}
                 className={`uhie-bubble uhie-bubble--${message.role}`}
               >
-                {message.text}
+                <div className="uhie-bubble-text">{message.text}</div>
+                {message.role === 'assistant' &&
+                  Array.isArray(message.references) &&
+                  message.references.length > 0 && (
+                    <ul className="uhie-refs" aria-label="Sources">
+                      {message.references.map((ref) => (
+                        <li key={`${message.id}-${ref.id}`} className="uhie-ref-capsule">
+                          <span className="uhie-ref-num">{ref.id}</span>
+                          <span className="uhie-ref-label">{ref.label}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
               </div>
             ))}
             {isSending && (

@@ -134,7 +134,6 @@
   border-radius: 14px;
   font-size: 0.9rem;
   line-height: 1.45;
-  white-space: pre-wrap;
   word-break: break-word;
 }
 
@@ -157,6 +156,58 @@
 .uhie-bubble--typing {
   color: #64748B;
   font-style: italic;
+}
+
+.uhie-bubble-text {
+  white-space: pre-wrap;
+}
+
+.uhie-refs {
+  list-style: none;
+  margin: 0.55rem 0 0;
+  padding: 0.55rem 0 0;
+  border-top: 1px solid #E2E8F0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.uhie-ref-capsule {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  max-width: 100%;
+  padding: 0.18rem 0.5rem 0.18rem 0.22rem;
+  border-radius: 999px;
+  background: #F0FDFA;
+  border: 1px solid #99F6E4;
+  color: #115E59;
+  font-size: 0.68rem;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.uhie-ref-num {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.05rem;
+  height: 1.05rem;
+  padding: 0 0.2rem;
+  border-radius: 999px;
+  background: #0F766E;
+  color: #F0FDFA;
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+.uhie-ref-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
 }
 
 .uhie-composer {
