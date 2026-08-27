@@ -1,6 +1,7 @@
 // src/App.jsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import LandingPage from './pages/LandingPage';
 import CaregiverLogin from './pages/CaregiverLogin';
 import AdminLogin from './pages/AdminLogin';
@@ -101,6 +102,7 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <UhieChatWidget />
+      <Analytics />
     </Router>
   );
 }
