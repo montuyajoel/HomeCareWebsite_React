@@ -1,11 +1,16 @@
 // src/pages/CaregiverLogin.jsx
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import AuthLayout from '../components/AuthLayout';
 import LoginForm from '../components/LoginForm';
+import { authService } from '../services/authService';
 
 export default function CaregiverLogin() {
   const navigate = useNavigate();
+
+  if (authService.isAuthenticated()) {
+    return <Navigate to={authService.getDashboardPath()} replace />;
+  }
 
   const handleSuccess = () => {
     navigate('/caregiver/dashboard');

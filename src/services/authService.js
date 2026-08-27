@@ -1,6 +1,7 @@
 // src/services/authService.js
 import axios from 'axios';
 import { API_URL, getApiErrorMessage } from '../config/api';
+import { clearAllUhieChat } from './uhieChatPersistence';
 
 export const authService = {
   /**
@@ -108,11 +109,12 @@ export const authService = {
   },
 
   /**
-   * Log the current user out, clearing cached auth credentials.
+   * Log the current user out, clearing cached auth credentials and Uhie chat.
    */
   logout: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    clearAllUhieChat();
     window.dispatchEvent(new CustomEvent('auth:logout'));
   },
 
@@ -127,6 +129,16 @@ export const authService = {
     } catch {
       return null;
     }
+  },
+
+  /**
+   * Dashboard path for the signed-in user's role.
+   * @returns {string}
+   */
+  getDashboardPath: () => {
+    const user = authService.getCurrentUser();
+    if (!user) return '/';
+    return user.role === 'admin' ? '/admin/dashboard' : '/caregiver/dashboard';
   },
 
   /**

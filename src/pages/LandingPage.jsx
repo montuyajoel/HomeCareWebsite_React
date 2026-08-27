@@ -1,9 +1,39 @@
 // src/pages/LandingPage.jsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import { authService } from '../services/authService';
+
+function useAuthUser() {
+  const [user, setUser] = useState(() =>
+    authService.isAuthenticated() ? authService.getCurrentUser() : null
+  );
+
+  useEffect(() => {
+    const sync = () => {
+      setUser(authService.isAuthenticated() ? authService.getCurrentUser() : null);
+    };
+    window.addEventListener('auth:logout', sync);
+    window.addEventListener('storage', sync);
+    window.addEventListener('focus', sync);
+    return () => {
+      window.removeEventListener('auth:logout', sync);
+      window.removeEventListener('storage', sync);
+      window.removeEventListener('focus', sync);
+    };
+  }, []);
+
+  return user;
+}
 
 export default function LandingPage() {
+  const user = useAuthUser();
+  const dashboardPath = user
+    ? user.role === 'admin'
+      ? '/admin/dashboard'
+      : '/caregiver/dashboard'
+    : null;
+
   return (
     <div className="app-container landing-shell">
       <Navbar />
@@ -26,12 +56,20 @@ export default function LandingPage() {
             Coordinate visits, caregivers, and client records for families across Ireland—so every call feels like someone who knows the home.
           </p>
           <div className="landing-actions">
-            <Link to="/caregiver/login" className="btn btn-primary btn-lg landing-cta-primary">
-              Caregiver Login
-            </Link>
-            <Link to="/admin/login" className="btn btn-lg landing-cta-secondary">
-              Admin Login
-            </Link>
+            {user && dashboardPath ? (
+              <Link to={dashboardPath} className="btn btn-primary btn-lg landing-cta-primary">
+                Go to Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link to="/caregiver/login" className="btn btn-primary btn-lg landing-cta-primary">
+                  Caregiver Login
+                </Link>
+                <Link to="/admin/login" className="btn btn-lg landing-cta-secondary">
+                  Admin Login
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </main>

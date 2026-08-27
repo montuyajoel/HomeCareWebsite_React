@@ -1,7 +1,16 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { authService } from '../../services/authService';
-import { uhieChatService } from '../../services/uhieChatService';
+import {
+  MAX_UHIE_HISTORY_TURNS,
+  MAX_UHIE_MESSAGE_LENGTH,
+  uhieChatService
+} from '../../services/uhieChatService';
+import {
+  clearAllUhieChat,
+  loadUhieChat,
+  saveUhieChat
+} from '../../services/uhieChatPersistence';
 import '../../styles/uhieChat.css';
 
 const WELCOME =
@@ -25,51 +34,165 @@ function createId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function sanitizePersistedMessages(messages) {
+  if (!Array.isArray(messages) || messages.length === 0) {
+    return [WELCOME_MESSAGE];
+  }
+
+  const cleaned = messages
+    .filter((m) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.text === 'string')
+    .map((m) => ({
+      id: m.id || createId(),
+      role: m.role,
+      text: m.text,
+      ...(Array.isArray(m.references) ? { references: m.references } : {})
+    }));
+
+  if (cleaned.length === 0) return [WELCOME_MESSAGE];
+
+  // Ensure a welcome bubble exists at the start when restoring an empty-looking thread
+  if (cleaned[0].id !== 'welcome' && cleaned.every((m) => m.role === 'user')) {
+    return [WELCOME_MESSAGE, ...cleaned];
+  }
+
+  return cleaned;
+}
+
+function buildPriorHistory(messages) {
+  return messages
+    .filter((m) => m.id !== 'welcome')
+    .map((m) => ({ role: m.role, content: m.text }))
+    .slice(-MAX_UHIE_HISTORY_TURNS);
+}
+
 export default function UhieChatWidget() {
   const location = useLocation();
+  const [isAuthed, setIsAuthed] = useState(() => authService.isAuthenticated());
+  const [user, setUser] = useState(() =>
+    authService.isAuthenticated() ? authService.getCurrentUser() : null
+  );
   const [isOpen, setIsOpen] = useState(false);
   const [draft, setDraft] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [messages, setMessages] = useState([WELCOME_MESSAGE]);
-  const [isAuthed, setIsAuthed] = useState(() => authService.isAuthenticated());
+  const [foundryOnline, setFoundryOnline] = useState(null);
   const listRef = useRef(null);
   const inputRef = useRef(null);
+  const abortRef = useRef(null);
+  const restoredKeyRef = useRef(null);
+  const persistReadyRef = useRef(false);
 
-  const resetChat = useCallback(() => {
+  const syncAuthState = useCallback(() => {
+    const authenticated = authService.isAuthenticated();
+    setIsAuthed(authenticated);
+    setUser(authenticated ? authService.getCurrentUser() : null);
+  }, []);
+
+  const resetChatUi = useCallback(() => {
     setIsOpen(false);
     setDraft('');
     setIsSending(false);
     setMessages([WELCOME_MESSAGE]);
+    persistReadyRef.current = false;
+    restoredKeyRef.current = null;
   }, []);
 
+  // Abort in-flight request on unmount
   useEffect(() => {
-    setIsAuthed(authService.isAuthenticated());
-  }, [location.pathname]);
-
-  useEffect(() => {
-    const syncAuth = () => setIsAuthed(authService.isAuthenticated());
-    window.addEventListener('storage', syncAuth);
-    window.addEventListener('focus', syncAuth);
     return () => {
-      window.removeEventListener('storage', syncAuth);
-      window.removeEventListener('focus', syncAuth);
+      abortRef.current?.abort();
     };
   }, []);
+
+  useEffect(() => {
+    syncAuthState();
+  }, [location.pathname, syncAuthState]);
+
+  useEffect(() => {
+    window.addEventListener('storage', syncAuthState);
+    window.addEventListener('focus', syncAuthState);
+    return () => {
+      window.removeEventListener('storage', syncAuthState);
+      window.removeEventListener('focus', syncAuthState);
+    };
+  }, [syncAuthState]);
 
   useEffect(() => {
     const onLogout = () => {
-      resetChat();
+      abortRef.current?.abort();
+      clearAllUhieChat();
+      resetChatUi();
       setIsAuthed(false);
+      setUser(null);
+      setFoundryOnline(null);
     };
     window.addEventListener('auth:logout', onLogout);
     return () => window.removeEventListener('auth:logout', onLogout);
-  }, [resetChat]);
+  }, [resetChatUi]);
 
+  // Restore persisted chat when authenticated on a protected route.
+  // Do NOT clear sessionStorage when merely hidden on a public route.
   useEffect(() => {
-    if (!isAuthed || isPublicRoute(location.pathname)) {
-      resetChat();
+    if (!isAuthed || !user) {
+      return;
     }
-  }, [isAuthed, location.pathname, resetChat]);
+
+    if (isPublicRoute(location.pathname)) {
+      // Keep panel closed while hidden; leave storage intact for restore later.
+      setIsOpen(false);
+      persistReadyRef.current = false;
+      return;
+    }
+
+    const identity = `${user.employeeCode}:${user.role}`;
+    if (restoredKeyRef.current === identity) {
+      persistReadyRef.current = true;
+      return;
+    }
+
+    const stored = loadUhieChat(user);
+    if (stored?.messages?.length) {
+      setMessages(sanitizePersistedMessages(stored.messages));
+      setIsOpen(Boolean(stored.isOpen));
+    } else {
+      setMessages([WELCOME_MESSAGE]);
+      setIsOpen(false);
+    }
+    restoredKeyRef.current = identity;
+    persistReadyRef.current = true;
+  }, [isAuthed, user, location.pathname]);
+
+  // Persist messages + open state while signed in (including while on public routes
+  // if we still hold in-memory state — but we only write after a successful restore).
+  useEffect(() => {
+    if (!isAuthed || !user || !persistReadyRef.current) return;
+    if (isPublicRoute(location.pathname)) return;
+    saveUhieChat(user, { messages, isOpen });
+  }, [messages, isOpen, isAuthed, user, location.pathname]);
+
+  // Soft health probe for subtitle (replaces always-true isConfigured offline path)
+  useEffect(() => {
+    if (!isAuthed || isPublicRoute(location.pathname)) return undefined;
+
+    const controller = new AbortController();
+    let cancelled = false;
+
+    uhieChatService
+      .checkHealth({ signal: controller.signal })
+      .then((result) => {
+        if (!cancelled) setFoundryOnline(result.foundryConfigured && result.ok);
+      })
+      .catch((error) => {
+        if (!cancelled && error?.name !== 'AbortError' && !error?.isAbort) {
+          setFoundryOnline(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [isAuthed, location.pathname]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -84,8 +207,6 @@ export default function UhieChatWidget() {
     return null;
   }
 
-  const user = authService.getCurrentUser();
-
   const handleToggle = () => {
     setIsOpen((open) => !open);
   };
@@ -95,19 +216,35 @@ export default function UhieChatWidget() {
     const text = draft.trim();
     if (!text || isSending) return;
 
+    if (text.length > MAX_UHIE_MESSAGE_LENGTH) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: createId(),
+          role: 'assistant',
+          text: `Please keep messages to ${MAX_UHIE_MESSAGE_LENGTH} characters or fewer.`
+        }
+      ]);
+      return;
+    }
+
     const userMessage = { id: createId(), role: 'user', text };
-    const nextHistory = [...messages, userMessage]
-      .filter((m) => m.id !== 'welcome')
-      .map((m) => ({ role: m.role, content: m.text }));
+    // Prior turns only — current message is sent separately as `message`
+    const history = buildPriorHistory(messages);
 
     setMessages((prev) => [...prev, userMessage]);
     setDraft('');
     setIsSending(true);
 
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     try {
       const result = await uhieChatService.sendMessage({
         message: text,
-        history: nextHistory
+        history,
+        signal: controller.signal
       });
       setMessages((prev) => [
         ...prev,
@@ -119,6 +256,9 @@ export default function UhieChatWidget() {
         }
       ]);
     } catch (error) {
+      if (error?.isAbort || error?.name === 'AbortError') {
+        return;
+      }
       setMessages((prev) => [
         ...prev,
         {
@@ -128,9 +268,14 @@ export default function UhieChatWidget() {
         }
       ]);
     } finally {
-      setIsSending(false);
+      if (abortRef.current === controller) {
+        setIsSending(false);
+      }
     }
   };
+
+  const subtitleStatus =
+    foundryOnline === false ? ' · offline' : foundryOnline === true ? '' : '';
 
   return (
     <div className="uhie-root" aria-live="polite">
@@ -151,7 +296,7 @@ export default function UhieChatWidget() {
                 {user?.fullName
                   ? `Chatting as ${user.fullName}${user.role ? ` (${user.role})` : ''}`
                   : 'Signed in'}
-                {!uhieChatService.isConfigured() ? ' · offline' : ''}
+                {subtitleStatus}
               </p>
             </div>
             <button
@@ -202,10 +347,11 @@ export default function UhieChatWidget() {
               className="uhie-input"
               type="text"
               value={draft}
-              onChange={(e) => setDraft(e.target.value)}
+              onChange={(e) => setDraft(e.target.value.slice(0, MAX_UHIE_MESSAGE_LENGTH))}
               placeholder="Ask Uhie about HR, care, or schedules…"
               disabled={isSending}
               autoComplete="off"
+              maxLength={MAX_UHIE_MESSAGE_LENGTH}
             />
             <button
               type="submit"

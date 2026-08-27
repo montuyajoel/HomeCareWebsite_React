@@ -1,14 +1,18 @@
 // src/pages/AdminLogin.jsx
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useLocation } from 'react-router-dom';
+import { Navigate, useNavigate, useLocation } from 'react-router-dom';
 import AuthLayout from '../components/AuthLayout';
 import LoginForm from '../components/LoginForm';
+import { authService } from '../services/authService';
 
 export default function AdminLogin() {
   const navigate = useNavigate();
   const location = useLocation();
   const registrationMessage = location.state?.message;
+
+  if (authService.isAuthenticated()) {
+    return <Navigate to={authService.getDashboardPath()} replace />;
+  }
 
   const handleSuccess = () => {
     navigate('/admin/dashboard');

@@ -1,15 +1,32 @@
 // src/components/Navbar.jsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
 
 export default function Navbar() {
   const navigate = useNavigate();
-  const user = authService.getCurrentUser();
+  const [user, setUser] = useState(() =>
+    authService.isAuthenticated() ? authService.getCurrentUser() : null
+  );
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const sync = () => {
+      setUser(authService.isAuthenticated() ? authService.getCurrentUser() : null);
+    };
+    window.addEventListener('auth:logout', sync);
+    window.addEventListener('storage', sync);
+    window.addEventListener('focus', sync);
+    return () => {
+      window.removeEventListener('auth:logout', sync);
+      window.removeEventListener('storage', sync);
+      window.removeEventListener('focus', sync);
+    };
+  }, []);
 
   const handleLogout = () => {
     authService.logout();
+    setUser(null);
     setMobileMenuOpen(false);
     navigate('/');
   };

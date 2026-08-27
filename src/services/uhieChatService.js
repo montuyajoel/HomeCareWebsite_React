@@ -2,6 +2,12 @@ import axios from 'axios';
 import { API_URL, UHIE_CHAT_URL, getApiErrorMessage } from '../config/api';
 import { authService } from './authService';
 
+/** Client-side message length limit (backend should still enforce). */
+export const MAX_UHIE_MESSAGE_LENGTH = 2000;
+
+/** Max prior turns sent with each chat request. */
+export const MAX_UHIE_HISTORY_TURNS = 12;
+
 /**
  * Prefer dedicated Uhie URL, otherwise the HomeCare API `/api/uhie/chat` route.
  */
@@ -10,8 +16,13 @@ function getChatEndpoint() {
   return `${API_URL}/api/uhie/chat`;
 }
 
+function getHealthEndpoint() {
+  return `${API_URL}/api/uhie/health`;
+}
+
 /**
  * Build the identity payload to send with every Uhie chat request.
+ * Server should treat JWT as source of truth; body user is a display hint only.
  */
 function getUserContext() {
   const user = authService.getCurrentUser();
@@ -81,6 +92,45 @@ function formatReferenceLabel(value) {
   return spaced;
 }
 
+function isAbortError(error) {
+  return (
+    error?.code === 'ERR_CANCELED' ||
+    error?.name === 'CanceledError' ||
+    error?.name === 'AbortError' ||
+    axios.isCancel?.(error)
+  );
+}
+
+/**
+ * Cap history to the last N prior turns. Caller must exclude the current message.
+ */
+export function capUhieHistory(history, limit = MAX_UHIE_HISTORY_TURNS) {
+  if (!Array.isArray(history) || history.length === 0) return [];
+  return history.slice(-limit);
+}
+
+/**
+ * Shallow Uhie health probe (Foundry config flag; no deep Foundry call).
+ * @returns {Promise<{ ok: boolean, foundryConfigured: boolean }>}
+ */
+export async function checkUhieHealth({ signal } = {}) {
+  try {
+    const response = await axios.get(getHealthEndpoint(), {
+      timeout: 8000,
+      signal
+    });
+    const data = response.data || {};
+    const foundryConfigured = data.foundryConfigured !== false && response.status === 200;
+    return {
+      ok: response.status === 200 && data.status !== 'degraded',
+      foundryConfigured: Boolean(data.foundryConfigured ?? foundryConfigured)
+    };
+  } catch (error) {
+    if (isAbortError(error)) throw error;
+    return { ok: false, foundryConfigured: false };
+  }
+}
+
 /**
  * Send a chat message to the HomeCare backend Uhie route (Foundry stays server-side).
  *
@@ -88,11 +138,16 @@ function formatReferenceLabel(value) {
  * Authorization: Bearer <user JWT>
  * Body: { message, history?, user }
  * Response: { success, reply|response, references? }
+ *
+ * @param {{ message: string, history?: Array, signal?: AbortSignal }} args
  */
-export async function sendUhieMessage({ message, history = [] }) {
+export async function sendUhieMessage({ message, history = [], signal } = {}) {
   const trimmed = (message || '').trim();
   if (!trimmed) {
     throw new Error('Message cannot be empty.');
+  }
+  if (trimmed.length > MAX_UHIE_MESSAGE_LENGTH) {
+    throw new Error(`Message must be ${MAX_UHIE_MESSAGE_LENGTH} characters or fewer.`);
   }
 
   const user = getUserContext();
@@ -108,7 +163,7 @@ export async function sendUhieMessage({ message, history = [] }) {
   const endpoint = getChatEndpoint();
   const payload = {
     message: trimmed,
-    history,
+    history: capUhieHistory(history),
     user
   };
 
@@ -118,7 +173,8 @@ export async function sendUhieMessage({ message, history = [] }) {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
-      timeout: 60000
+      timeout: 60000,
+      signal
     });
 
     const data = response.data || {};
@@ -140,6 +196,18 @@ export async function sendUhieMessage({ message, history = [] }) {
       stub: false
     };
   } catch (error) {
+    if (isAbortError(error)) {
+      const abortError = new Error('Request aborted');
+      abortError.name = 'AbortError';
+      abortError.isAbort = true;
+      throw abortError;
+    }
+
+    if (error?.response?.status === 401) {
+      authService.logout();
+      throw new Error('Your session has expired. Please sign in again.');
+    }
+
     const serverMessage =
       error?.response?.data?.message || error?.response?.data?.error;
     throw new Error(
@@ -150,6 +218,10 @@ export async function sendUhieMessage({ message, history = [] }) {
 
 export const uhieChatService = {
   sendMessage: sendUhieMessage,
+  checkHealth: checkUhieHealth,
+  /** @deprecated Prefer checkHealth(); kept for callers that need a sync stub. */
   isConfigured: () => true,
-  getEndpoint: getChatEndpoint
+  getEndpoint: getChatEndpoint,
+  MAX_MESSAGE_LENGTH: MAX_UHIE_MESSAGE_LENGTH,
+  MAX_HISTORY_TURNS: MAX_UHIE_HISTORY_TURNS
 };
