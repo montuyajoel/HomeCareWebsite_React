@@ -55,7 +55,9 @@ export default function LandingPage() {
           <p className="landing-description">
             Coordinate visits, caregivers, and client records for families across Ireland—so every call feels like someone who knows the home.
           </p>
-          <div className="landing-actions">
+          <div
+            className={`landing-actions${user && dashboardPath ? '' : ' landing-actions--guest-logins'}`}
+          >
             {user && dashboardPath ? (
               <Link to={dashboardPath} className="btn btn-primary btn-lg landing-cta-primary">
                 Go to Dashboard
