@@ -1,0 +1,45 @@
+{
+  "views": [
+    {
+      "name": "front",
+      "width": 789,
+      "height": 829,
+      "text_layers": {
+        "jungler": {
+          "text": "JUNGLER",
+          "x": 322,
+          "y": 90,
+          "width": 143,
+          "height": 49,
+          "color": "black",
+          "orientation": "horizontal"
+        }
+      }
+    },
+    {
+      "name": "back",
+      "width": 789,
+      "height": 827,
+      "text_layers": {
+        "jungler": {
+          "text": "JUNGLER",
+          "x": 278,
+          "y": 128,
+          "width": 235,
+          "height": 85,
+          "color": "white",
+          "orientation": "horizontal"
+        },
+        "forbidden_gospel": {
+          "text": "FORBIDDEN GOSPEL",
+          "x": 322,
+          "y": 220,
+          "width": 155,
+          "height": 455,
+          "color": "white",
+          "orientation": "vertical"
+        }
+      }
+    }
+  ]
+}

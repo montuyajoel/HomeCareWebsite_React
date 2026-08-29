@@ -1,0 +1,14 @@
+{
+  "back_jungler": {
+    "size": 86,
+    "iou": 0.43247962747380675
+  },
+  "back_forbidden_gospel": {
+    "size": 25,
+    "iou": 0.141353811149033
+  },
+  "front_jungler": {
+    "size": 14,
+    "iou": 0.5103467960610818
+  }
+}
