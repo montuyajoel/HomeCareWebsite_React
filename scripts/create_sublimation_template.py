@@ -340,8 +340,77 @@ def layer_from_pil(name: str, img: PILImage.Image, visible=True, opacity=255) ->
     )
 
 
+DEFAULT_REFERENCE = os.environ.get(
+    "JERSEY_REFERENCE",
+    "/home/ubuntu/.cursor/projects/workspace/assets/B9B9ABDD-8A5D-4599-BD31-840A8A5C9451_L0_001.jpg",
+)
+
+# Approximate crop boxes on the 3D mockup (x0, y0, x1, y1) in reference pixels
+MOCKUP_CROPS = {
+    "FRONT": (55, 330, 525, 1175),
+    "BACK": (560, 330, 1030, 1175),
+    "L SLEEVE": (55, 360, 195, 820),
+    "R SLEEVE": (385, 360, 525, 820),
+    "COLLAR": (175, 330, 405, 455),
+}
+
+
+def panel_bbox(cut: Sequence[Tuple[int, int]]) -> Tuple[int, int, int, int]:
+    xs = [p[0] for p in cut]
+    ys = [p[1] for p in cut]
+    return min(xs), min(ys), max(xs), max(ys)
+
+
+def paste_art_into_panel(
+    canvas: PILImage.Image,
+    art: PILImage.Image,
+    cut: Sequence[Tuple[int, int]],
+) -> PILImage.Image:
+    """Resize art to panel bbox and clip to cut polygon."""
+    minx, miny, maxx, maxy = panel_bbox(cut)
+    pw, ph = maxx - minx, maxy - miny
+    if pw <= 0 or ph <= 0:
+        return canvas
+    resized = art.resize((pw, ph), PILImage.Resampling.LANCZOS).convert("RGBA")
+    mask = PILImage.new("L", canvas.size, 0)
+    ImageDraw.Draw(mask).polygon(list(cut), fill=255)
+    layer = new_rgba(canvas.size)
+    layer.paste(resized, (minx, miny))
+    masked = new_rgba(canvas.size)
+    masked.paste(layer, mask=mask)
+    return PILImage.alpha_composite(canvas, masked)
+
+
+def build_design_from_reference(
+    size: Tuple[int, int],
+    panels_abs: dict,
+    reference_path: str = DEFAULT_REFERENCE,
+) -> PILImage.Image:
+    """Map the Orochi mockup artwork onto flat sublimation panels."""
+    layer = new_rgba(size)
+    if not os.path.exists(reference_path):
+        return build_design_fill(size, panels_abs)
+
+    ref = PILImage.open(reference_path).convert("RGBA")
+    ref_w, ref_h = ref.size
+
+    for panel_name, (cut, _bleed, _safe) in panels_abs.items():
+        crop = MOCKUP_CROPS.get(panel_name)
+        if crop is None:
+            continue
+        x0, y0, x1, y1 = crop
+        x0 = max(0, min(x0, ref_w - 1))
+        y0 = max(0, min(y0, ref_h - 1))
+        x1 = max(x0 + 1, min(x1, ref_w))
+        y1 = max(y0 + 1, min(y1, ref_h))
+        art = ref.crop((x0, y0, x1, y1))
+        layer = paste_art_into_panel(layer, art, cut)
+
+    return layer
+
+
 def build_design_fill(size: Tuple[int, int], panels_abs: dict) -> PILImage.Image:
-    """Stylized green/black energy fill inspired by the jersey (placeholder artwork)."""
+    """Fallback stylized green/black energy fill when no reference image is available."""
     layer = new_rgba(size)
     draw = ImageDraw.Draw(layer)
     rng = np.random.default_rng(7)
@@ -505,7 +574,7 @@ def main():
         fill=(60, 80, 65, 255),
     )
 
-    design = build_design_fill(size, panels_abs)
+    design = build_design_from_reference(size, panels_abs)
 
     # Composite PNG (production view without sample art, plus a design preview)
     production = bg.copy()
@@ -513,15 +582,20 @@ def main():
         production = PILImage.alpha_composite(production, layer)
 
     preview = bg.copy()
-    # design clipped already; multiply under cut guides
     preview = PILImage.alpha_composite(preview, design)
     for layer in (bleed_layer, cut_layer, safe_layer, labels_layer, reg_layer, legend, notes):
         preview = PILImage.alpha_composite(preview, layer)
 
+    # Design-only flat panels (no guides/header) for quick PNG review / print prep
+    design_only = bg.copy()
+    design_only = PILImage.alpha_composite(design_only, design)
+
     png_path = os.path.join(out_dir, "ss-jersey-phoenix-sublimation-template.png")
     preview_path = os.path.join(out_dir, "ss-jersey-phoenix-sublimation-template-design-preview.png")
+    artwork_path = os.path.join(out_dir, "ss-jersey-phoenix-sublimation-artwork.png")
     production.convert("RGB").save(png_path, "PNG", dpi=(DPI, DPI))
     preview.convert("RGB").save(preview_path, "PNG", dpi=(DPI, DPI))
+    design_only.convert("RGB").save(artwork_path, "PNG", dpi=(DPI, DPI))
 
     # PSD layers
     psd_layers = [
@@ -531,7 +605,7 @@ def main():
             closed=False,
             layers=[
                 layer_from_pil("Art_Safe_White", art_areas),
-                layer_from_pil("Sample_Design_Preview", design, visible=True, opacity=255),
+                layer_from_pil("Reference_Design", design, visible=True, opacity=255),
             ],
         ),
         Group(
@@ -571,9 +645,10 @@ def main():
     os.makedirs(art_dir, exist_ok=True)
     production.convert("RGB").save(os.path.join(art_dir, "ss-jersey-phoenix-sublimation-template.png"), "PNG")
     preview.convert("RGB").save(os.path.join(art_dir, "ss-jersey-phoenix-sublimation-template-design-preview.png"), "PNG")
+    design_only.convert("RGB").save(os.path.join(art_dir, "ss-jersey-phoenix-sublimation-artwork.png"), "PNG")
 
     print("Wrote:")
-    for p in (png_path, preview_path, psd_path):
+    for p in (png_path, preview_path, artwork_path, psd_path):
         print(f"  {p}  ({os.path.getsize(p)} bytes)  canvas={width}x{height}px @ {DPI}dpi")
 
 

@@ -7,7 +7,8 @@ Flat **cut-and-sew dye-sublimation** template for a short-sleeve V-neck athletic
 | File | Use |
 |------|-----|
 | `ss-jersey-phoenix-sublimation-template.png` | Blank production layout (cut / bleed / safe guides) |
-| `ss-jersey-phoenix-sublimation-template-design-preview.png` | Same layout with sample green energy artwork |
+| `ss-jersey-phoenix-sublimation-template-design-preview.png` | Layout + Orochi Jaguars reference design on panels |
+| `ss-jersey-phoenix-sublimation-artwork.png` | Design mapped to panels only (no guide overlays) |
 | `ss-jersey-phoenix-sublimation-template.psd` | Layered Photoshop file |
 
 ## Panels
