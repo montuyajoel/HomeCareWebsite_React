@@ -1,8 +1,27 @@
 // src/pages/LandingPage.jsx
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { authService } from '../services/authService';
+
+const DEMO_ACCOUNTS = {
+  caregiver: {
+    fullName: 'Sarah Connor',
+    employeeCode: 'EMP003',
+    role: 'caregiver',
+    path: '/caregiver/dashboard',
+    label: 'Enter as Caregiver',
+    detail: 'Sarah Connor (EMP003)'
+  },
+  admin: {
+    fullName: 'James Smith',
+    employeeCode: 'ADM-003',
+    role: 'admin',
+    path: '/admin/dashboard',
+    label: 'Enter as Admin',
+    detail: 'James Smith (ADM-003)'
+  }
+};
 
 function useAuthUser() {
   const [user, setUser] = useState(() =>
@@ -27,12 +46,38 @@ function useAuthUser() {
 }
 
 export default function LandingPage() {
+  const navigate = useNavigate();
   const user = useAuthUser();
+  const [demoLoginKey, setDemoLoginKey] = useState(null);
+  const [demoError, setDemoError] = useState('');
   const dashboardPath = user
     ? user.role === 'admin'
       ? '/admin/dashboard'
       : '/caregiver/dashboard'
     : null;
+
+  const handleDemoLogin = async (accountKey) => {
+    const account = DEMO_ACCOUNTS[accountKey];
+    if (!account) return;
+
+    setDemoError('');
+    setDemoLoginKey(accountKey);
+
+    try {
+      const result = await authService.login(
+        account.fullName,
+        account.employeeCode,
+        account.role
+      );
+      if (result.success) {
+        navigate(account.path);
+      }
+    } catch (err) {
+      setDemoError(err.message || 'Could not sign in with the demo account.');
+    } finally {
+      setDemoLoginKey(null);
+    }
+  };
 
   return (
     <div className="app-container landing-shell">
@@ -68,6 +113,27 @@ export default function LandingPage() {
                 <Link to="/admin/login" className="btn btn-lg landing-cta-secondary">
                   Admin Login
                 </Link>
+                <div className="landing-demo">
+                  <p className="landing-demo-label">Quick demo access</p>
+                  <div className="landing-demo-actions">
+                    {Object.entries(DEMO_ACCOUNTS).map(([key, account]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        className={`btn btn-lg ${key === 'caregiver' ? 'landing-cta-primary' : 'landing-cta-secondary'}`}
+                        onClick={() => handleDemoLogin(key)}
+                        disabled={Boolean(demoLoginKey)}
+                      >
+                        {demoLoginKey === key ? 'Signing in...' : `${account.label} · ${account.detail}`}
+                      </button>
+                    ))}
+                  </div>
+                  {demoError && (
+                    <p className="landing-demo-error" role="alert">
+                      {demoError}
+                    </p>
+                  )}
+                </div>
               </>
             )}
           </div>
