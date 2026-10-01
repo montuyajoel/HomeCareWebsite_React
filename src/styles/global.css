@@ -596,6 +596,13 @@ select.form-input {
   animation: landing-rise 0.75s ease 0.62s forwards;
 }
 
+/* Navbar already exposes login on small screens — hide duplicate hero CTAs */
+@media (max-width: 768px) {
+  .landing-actions--guest-logins {
+    display: none;
+  }
+}
+
 .landing-cta-primary {
   background-color: #14B8A6;
   border-color: #14B8A6;
