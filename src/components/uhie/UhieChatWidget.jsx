@@ -18,6 +18,11 @@ const WELCOME =
 
 const WELCOME_MESSAGE = { id: 'welcome', role: 'assistant', text: WELCOME };
 
+// Set to false once the Azure subscription backing Uhie is renewed.
+const UHIE_SERVICE_UNAVAILABLE = true;
+const UHIE_UNAVAILABLE_MESSAGE =
+  "Uhie is currently unavailable because our Azure subscription has expired. We're sorry for the inconvenience.";
+
 const PUBLIC_ROUTES = new Set([
   '/',
   '/admin/login',
@@ -172,7 +177,9 @@ export default function UhieChatWidget() {
 
   // Soft health probe for subtitle (replaces always-true isConfigured offline path)
   useEffect(() => {
-    if (!isAuthed || isPublicRoute(location.pathname)) return undefined;
+    if (UHIE_SERVICE_UNAVAILABLE || !isAuthed || isPublicRoute(location.pathname)) {
+      return undefined;
+    }
 
     const controller = new AbortController();
     let cancelled = false;
@@ -214,7 +221,7 @@ export default function UhieChatWidget() {
   const handleSend = async (event) => {
     event?.preventDefault();
     const text = draft.trim();
-    if (!text || isSending) return;
+    if (!text || isSending || UHIE_SERVICE_UNAVAILABLE) return;
 
     if (text.length > MAX_UHIE_MESSAGE_LENGTH) {
       setMessages((prev) => [
@@ -275,7 +282,7 @@ export default function UhieChatWidget() {
   };
 
   const subtitleStatus =
-    foundryOnline === false ? ' · offline' : foundryOnline === true ? '' : '';
+    UHIE_SERVICE_UNAVAILABLE || foundryOnline === false ? ' · offline' : foundryOnline === true ? '' : '';
 
   return (
     <div className="uhie-root" aria-live="polite">
@@ -330,6 +337,11 @@ export default function UhieChatWidget() {
                   )}
               </div>
             ))}
+            {UHIE_SERVICE_UNAVAILABLE && (
+              <div className="uhie-bubble uhie-bubble--assistant uhie-bubble--notice" role="status">
+                {UHIE_UNAVAILABLE_MESSAGE}
+              </div>
+            )}
             {isSending && (
               <div className="uhie-bubble uhie-bubble--assistant uhie-bubble--typing">
                 Uhie is typing…
@@ -348,15 +360,19 @@ export default function UhieChatWidget() {
               type="text"
               value={draft}
               onChange={(e) => setDraft(e.target.value.slice(0, MAX_UHIE_MESSAGE_LENGTH))}
-              placeholder="Ask Uhie about HR, care, or schedules…"
-              disabled={isSending}
+              placeholder={
+                UHIE_SERVICE_UNAVAILABLE
+                  ? 'Uhie is temporarily unavailable'
+                  : 'Ask Uhie about HR, care, or schedules…'
+              }
+              disabled={isSending || UHIE_SERVICE_UNAVAILABLE}
               autoComplete="off"
               maxLength={MAX_UHIE_MESSAGE_LENGTH}
             />
             <button
               type="submit"
               className="uhie-send"
-              disabled={isSending || !draft.trim()}
+              disabled={isSending || UHIE_SERVICE_UNAVAILABLE || !draft.trim()}
             >
               Send
             </button>
