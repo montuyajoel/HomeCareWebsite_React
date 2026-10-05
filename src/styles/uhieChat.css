@@ -145,6 +145,12 @@
   border-bottom-left-radius: 4px;
 }
 
+.uhie-bubble--notice {
+  background: #FFFBEB;
+  border-color: #FCD34D;
+  color: #92400E;
+}
+
 .uhie-bubble--user {
   align-self: flex-end;
   background: #CCFBF1;
